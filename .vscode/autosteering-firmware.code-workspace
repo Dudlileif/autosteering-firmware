@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"name": "autosteering-firmware",
+			"path": "../"
+		},
+		{
+			"name": "esp32",
+			"path": "../esp32"
+		},
+		{
+			"name": "teensy",
+			"path": "../teensy"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cmath": "cpp"
+		}
+	}
+}
