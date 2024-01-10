@@ -200,9 +200,9 @@ bool attemptToUpdateTeensy(const String &fileName)
             Serial.println("Empty file, update aborted.");
         }
         updateFile.close();
-        LittleFS.remove(fileName);
         if (updated)
         {
+            LittleFS.remove(fileName);
             Serial.println("Teensy firmware update sent.");
         }
         return updated;

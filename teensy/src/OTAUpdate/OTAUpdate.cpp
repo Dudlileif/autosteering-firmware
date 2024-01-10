@@ -46,7 +46,6 @@ void performUpdate()
             break;
         }
     }
-
     if (updateReady)
     { // Perform update
         update_firmware(&NETWORK_SERIAL, &usbAndNetworkSerial, bufferAddr, bufferSize);

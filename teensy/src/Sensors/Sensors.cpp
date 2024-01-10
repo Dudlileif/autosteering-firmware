@@ -76,7 +76,7 @@ StaticJsonDocument<SENSOR_DATA_SIZE> getSensorData()
     }
 
     data["motor_enabled"] = motorEnabled;
-    if (abs(stepperRPMActual) > 0 || motorEnabled || motorCalibration)
+    if (motorEnabled || motorCalibration)
     {
         data["motor_rpm"] = roundToNumberOfDecimals(stepperRPMActual, 3);
         data["motor_sg"] = stepperStallguardResult;
