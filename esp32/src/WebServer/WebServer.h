@@ -20,10 +20,13 @@ void startWebServer();
 String networkForm(uint16_t i, String initialSSID, String initialPassword);
 
 String numberForm(String label, String name, String id, int32_t minValue, int32_t maxValue, int32_t initialValue);
+String numberForm(String label, String name, String id, int32_t minValue, int32_t maxValue, int32_t initialValue, String description);
 
 String numberForm(String label, String name, String id, int32_t minValue, uint32_t maxValue, uint32_t initialValue);
+String numberForm(String label, String name, String id, int32_t minValue, uint32_t maxValue, uint32_t initialValue, String description);
 
 String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue);
+String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue, String description);
 
 String humanReadableSize(const size_t bytes);
 

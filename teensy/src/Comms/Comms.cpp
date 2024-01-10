@@ -8,6 +8,8 @@
 DMAMEM byte networkSerialReadBuffer[4096];
 DMAMEM byte networkSerialWriteBuffer[256];
 
+MultiStream usbAndNetworkSerial = MultiStream(&Serial, &NETWORK_SERIAL);
+
 boolean enableSerial = false;
 
 char serialMessage[4096];
@@ -75,7 +77,7 @@ void sendSensorData()
 void receiveGNSSData()
 {
 
-    while (GNSS_SERIAL.available())
+    if (GNSS_SERIAL.available())
     {
         gnssMessage[gnssMessageLength] = GNSS_SERIAL.read();
         gnssMessageLength++;
@@ -105,7 +107,7 @@ void receiveGNSSData()
 
 void receiveNetworkData()
 {
-    while (NETWORK_SERIAL.available())
+    if (NETWORK_SERIAL.available())
     {
         int byte = NETWORK_SERIAL.read();
         // Pass through all messages to GNSS to ensure all
@@ -132,13 +134,13 @@ void receiveNetworkData()
             {
                 networkMessageFinished = true;
                 networkMessageIsNotRTCM = false;
-                // Serial.write(networkMessage, networkMessageLength);
 
                 DynamicJsonDocument document(networkMessageLength);
                 DeserializationError error = deserializeJson(document, networkMessage, networkMessageLength);
-
-                handleMotorControls(document);
-
+                if (document.size() > 0)
+                {
+                    handleMotorControls(document);
+                }
                 networkMessageLength = 0;
             }
         }

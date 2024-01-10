@@ -13,7 +13,7 @@ const char main_html[] PROGMEM = R"rawliteral(
             padding-top: 1rem;
             padding-right: 1rem;
             margin: auto;
-            max-width: 500px;
+            max-width: 750px;
         }
 
         .content h2 {
@@ -66,6 +66,16 @@ const char main_html[] PROGMEM = R"rawliteral(
                     <form action="/firmware">
                         <button type="submit">
                             <h3>Firmware update</h3>
+                        </button>
+                    </form>
+                    <br>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <form action="/teensy">
+                        <button type="submit">
+                            <h3>Teensy status</h3>
                         </button>
                     </form>
                     <br>

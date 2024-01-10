@@ -10,8 +10,9 @@ extern "C"
 }
 
 #include "Config/Config.h"
+#include "Comms/Comms.h"
 
-const char *firmwareDate = "2023-12-28";
+const char *firmwareDate = "2024-01-10";
 
 bool priorityMessageInProgress = false;
 bool firmwareUpdateInProgress = false;
@@ -23,25 +24,24 @@ bool priorityModeEnabled()
 
 void performUpdate()
 {
-    MultiStream multiSerial = MultiStream(&Serial, &NETWORK_SERIAL);
     // Prepare buffer
     uint32_t bufferAddr, bufferSize;
     if (firmware_buffer_init(&bufferAddr, &bufferSize) == 0)
     {
-        multiSerial.println("Unable to create firmware update buffer");
+        usbAndNetworkSerial.println("Unable to create firmware update buffer");
     }
-    multiSerial.printf("Created buffer = %1luK %s (%08lX - %08lX)\n",
-                       bufferSize / 1024, IN_FLASH(bufferAddr) ? "FLASH" : "RAM",
-                       bufferAddr, bufferAddr + bufferSize);
+    usbAndNetworkSerial.printf("Created buffer = %1luK %s (%08lX - %08lX)\n",
+                               bufferSize / 1024, IN_FLASH(bufferAddr) ? "FLASH" : "RAM",
+                               bufferAddr, bufferAddr + bufferSize);
 
     bool updateReady = false;
     uint32_t waitStart = millis();
-    multiSerial.println("Teensy waiting for update on serial");
+    usbAndNetworkSerial.println("Teensy waiting for update on serial");
     while (!updateReady && millis() - waitStart < 2000)
     {
         if (NETWORK_SERIAL.available())
         {
-            multiSerial.println("Teensy found update on serial");
+            usbAndNetworkSerial.println("Teensy found update on serial");
             updateReady = true;
             break;
         }
@@ -49,12 +49,12 @@ void performUpdate()
 
     if (updateReady)
     { // Perform update
-        update_firmware(&NETWORK_SERIAL, &multiSerial, bufferAddr, bufferSize);
+        update_firmware(&NETWORK_SERIAL, &usbAndNetworkSerial, bufferAddr, bufferSize);
     }
     // If the update fails, we erase the buffer and reboot.
-    multiSerial.println("Update failed.");
-    multiSerial.printf("Erasing FLASH buffer / free RAM buffer...\n");
-    multiSerial.~MultiStream();
+    usbAndNetworkSerial.println("Update failed.");
+    usbAndNetworkSerial.printf("Erasing FLASH buffer / free RAM buffer...\n");
+    usbAndNetworkSerial.~MultiStream();
     firmware_buffer_free(bufferAddr, bufferSize);
     REBOOT;
 }

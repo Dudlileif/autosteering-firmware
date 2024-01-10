@@ -31,13 +31,13 @@ bool MotorConfig::load(Stream *stream)
         Serial.println("Teensy config is empty, loading default.");
         return false;
     }
-    if (savedConfig.containsKey("AMAX"))
+    if (savedConfig.containsKey("AMAX_RPM_S_2"))
     {
-        AMAX = savedConfig["AMAX"];
+        AMAX_RPM_S_2 = savedConfig["AMAX_RPM_S_2"];
     }
-    if (savedConfig.containsKey("RPMMAX"))
+    if (savedConfig.containsKey("VMAX_RPM"))
     {
-        RPMMAX = savedConfig["RPMMAX"];
+        VMAX_RPM = savedConfig["VMAX_RPM"];
     }
     if (savedConfig.containsKey("VSTOP"))
     {
@@ -71,10 +71,6 @@ bool MotorConfig::load(Stream *stream)
     {
         RMS_CURRENT = savedConfig["RMS_CURRENT"];
     }
-    if (savedConfig.containsKey("IHOLD_IRUN"))
-    {
-        IHOLD_IRUN = savedConfig["IHOLD_IRUN"];
-    }
     if (savedConfig.containsKey("hold_multiplier"))
     {
         hold_multiplier = savedConfig["hold_multiplier"];
@@ -103,9 +99,13 @@ bool MotorConfig::load(Stream *stream)
     {
         en_pwm_mode = savedConfig["en_pwm_mode"];
     }
-    if (savedConfig.containsKey("pwm_auto_scale"))
+    if (savedConfig.containsKey("pwm_autoscale"))
     {
-        pwm_autoscale = savedConfig["pwm_auto_scale"];
+        pwm_autoscale = savedConfig["pwm_autoscale"];
+    }
+    if (savedConfig.containsKey("pwm_autograd"))
+    {
+        pwm_autograd = savedConfig["pwm_autograd"];
     }
     if (savedConfig.containsKey("SGT"))
     {
@@ -119,17 +119,17 @@ bool MotorConfig::load(Stream *stream)
     {
         sg_stop = savedConfig["sg_stop"];
     }
-    if (savedConfig.containsKey("TPWMTHRS"))
+    if (savedConfig.containsKey("TPWMTHRS_RPM"))
     {
-        TPWMTHRS = savedConfig["TPWMTHRS"];
+        TPWMTHRS_RPM = savedConfig["TPWMTHRS_RPM"];
     }
     if (savedConfig.containsKey("chm"))
     {
         chm = savedConfig["chm"];
     }
-    if (savedConfig.containsKey("TCOOLTHRS"))
+    if (savedConfig.containsKey("TCOOLTHRS_RPM"))
     {
-        TCOOLTHRS = savedConfig["TCOOLTHRS"];
+        TCOOLTHRS_RPM = savedConfig["TCOOLTHRS_RPM"];
     }
     if (savedConfig.containsKey("semin"))
     {
@@ -139,9 +139,9 @@ bool MotorConfig::load(Stream *stream)
     {
         semax = savedConfig["semax"];
     }
-    if (savedConfig.containsKey("THIGH"))
+    if (savedConfig.containsKey("THIGH_RPM"))
     {
-        THIGH = savedConfig["THIGH"];
+        THIGH_RPM = savedConfig["THIGH_RPM"];
     }
     if (savedConfig.containsKey("vhighfs"))
     {
@@ -151,9 +151,9 @@ bool MotorConfig::load(Stream *stream)
     {
         vhighchm = savedConfig["vhighchm"];
     }
-    if (savedConfig.containsKey("VDCMIN"))
+    if (savedConfig.containsKey("VDCMIN_RPM"))
     {
-        VDCMIN = savedConfig["VDCMIN"];
+        VDCMIN_RPM = savedConfig["VDCMIN_RPM"];
     }
     if (savedConfig.containsKey("DC_TIME"))
     {
@@ -178,54 +178,54 @@ bool MotorConfig::loadFromFile(FS *fs)
     bool configExists = fs->exists(MOTOR_CONFIG_FILE);
     if (configExists)
     {
-        Serial.println("Teensy config found.");
+        Serial.println("Motor config found.");
 
         File file = fs->open(MOTOR_CONFIG_FILE);
         bool success = load(&file);
         file.close();
         return success;
     }
-    Serial.println("Teensy config not found, loading default.");
+    Serial.println("Motor config not found, loading default.");
     return false;
 }
 
 StaticJsonDocument<1024> MotorConfig::json()
 {
     StaticJsonDocument<1024> jsonDocument;
-
-    jsonDocument["AMAX"] = AMAX;
-    jsonDocument["RPMMAX"] = RPMMAX;
-    jsonDocument["VSTOP"] = VSTOP;
-    jsonDocument["VSTART"] = VSTART;
-    jsonDocument["TOFF"] = TOFF;
-    jsonDocument["HSTRT"] = HSTRT;
-    jsonDocument["HEND"] = HEND;
     jsonDocument["MICRO_STEPS"] = MICRO_STEPS;
     jsonDocument["STEPS_PER_ROT"] = STEPS_PER_ROT;
     jsonDocument["RMS_CURRENT"] = RMS_CURRENT;
-    jsonDocument["IHOLD_IRUN"] = IHOLD_IRUN;
+    jsonDocument["CAL_ROT"] = CAL_ROT;
     jsonDocument["hold_multiplier"] = hold_multiplier;
+    jsonDocument["freewheel"] = freewheel;
+    jsonDocument["AMAX_RPM_S_2"] = AMAX_RPM_S_2;
+    jsonDocument["VMAX_RPM"] = VMAX_RPM;
+    jsonDocument["VSTOP"] = VSTOP;
+    jsonDocument["VSTART"] = VSTART;
+    jsonDocument["TOFF"] = TOFF;
+    jsonDocument["SGT"] = SGT;
+    jsonDocument["sfilt"] = sfilt;
+    jsonDocument["sg_stop"] = sg_stop;
+    jsonDocument["semin"] = semin;
+    jsonDocument["semax"] = semax;
+    jsonDocument["TCOOLTHRS_RPM"] = TCOOLTHRS_RPM;
+    jsonDocument["TPWMTHRS_RPM"] = TPWMTHRS_RPM;
+    jsonDocument["THIGH_RPM"] = THIGH_RPM;
+    jsonDocument["VDCMIN_RPM"] = VDCMIN_RPM;
+    jsonDocument["DC_TIME"] = DC_TIME;
+    jsonDocument["DC_SG"] = DC_SG;
+    jsonDocument["chm"] = chm;
+    jsonDocument["en_pwm_mode"] = en_pwm_mode;
+    jsonDocument["pwm_autoscale"] = pwm_autoscale;
+    jsonDocument["pwm_autograd"] = pwm_autograd;
+    jsonDocument["vhighfs"] = vhighfs;
+    jsonDocument["vhighchm"] = vhighchm;
+    jsonDocument["HSTRT"] = HSTRT;
+    jsonDocument["HEND"] = HEND;
     jsonDocument["IHOLDDELAY"] = IHOLDDELAY;
     jsonDocument["TBL"] = TBL;
     jsonDocument["TPOWERDOWN"] = TPOWERDOWN;
     jsonDocument["TZEROWAIT"] = TZEROWAIT;
-    jsonDocument["en_pwm_mode"] = en_pwm_mode;
-    jsonDocument["pwm_auto_scale"] = pwm_autoscale;
-    jsonDocument["SGT"] = SGT;
-    jsonDocument["sfilt"] = sfilt;
-    jsonDocument["sg_stop"] = sg_stop;
-    jsonDocument["TPWMTHRS"] = TPWMTHRS;
-    jsonDocument["chm"] = chm;
-    jsonDocument["TCOOLTHRS"] = TCOOLTHRS;
-    jsonDocument["semin"] = semin;
-    jsonDocument["semax"] = semax;
-    jsonDocument["THIGH"] = THIGH;
-    jsonDocument["vhighfs"] = vhighfs;
-    jsonDocument["vhighchm"] = vhighfs;
-    jsonDocument["VDCMIN"] = VDCMIN;
-    jsonDocument["DC_TIME"] = DC_TIME;
-    jsonDocument["DC_SG"] = DC_SG;
-    jsonDocument["CAL_ROT"] = CAL_ROT;
 
     return jsonDocument;
 }
@@ -250,4 +250,143 @@ void MotorConfig::printToStream(Stream *stream)
 void MotorConfig::printToStreamPretty(Stream *stream)
 {
     serializeJsonPretty(json(), *stream);
+}
+
+String MotorConfig::getDescription(String key)
+{
+
+    if (key == "hold_multiplier")
+    {
+        return "Multiplicator to get IHOLD (hold current) from IRUN (running current), set to 0 to allow freewheeling.";
+    }
+    else if (key == "CAL_ROT")
+    {
+        return "The number of rotations from center the motor should rotate during calibration. Keep low enough that the steering wheel doesn't reach the endstops.";
+    }
+    else if (key == "SGT")
+    {
+        return "StallGuard sensitivity threshold, a higher value decreases sensitivity and requres more torque to indicate a stall.";
+    }
+    else if (key == "RMS_CURRENT")
+    {
+        return "The RMS current rating of the motor, in mA. Keep this value at or below the motor's rating.";
+    }
+    else if (key == "en_pwm_mode")
+    {
+        return "Enable StealthChop when the speed is below TPWMTHRS_RPM.";
+    }
+    else if (key == "pwm_autoscale")
+    {
+        return "Enable automatic current control.";
+    }
+    else if (key == "pwm_autograd")
+    {
+        return "Enable automatic PWM gradient tuning.";
+    }
+    else if (key == "sfilt")
+    {
+        return "Enable filtering of StallGuard result. The result is updated every 4 fullsteps when enabled, otherwise every fullstep. The filtered result is more precise, but will be slower to observe a stall.";
+    }
+    else if (key == "sg_stop")
+    {
+        return "Enable stop by StallGuard, the motor will stop when encountering a stall.";
+    }
+    else if (key == "chm")
+    {
+        return "Chopper mode, disable to enable SpreadCycle, enable for constant off time with fast decay. Usually keep disabled.";
+    }
+    else if (key == "vhighfs")
+    {
+        return "Enable fullstepping when the speed is above THIGH_RPM.";
+    }
+    else if (key == "vhighchm")
+    {
+        return "Enable switching to chm=1 and fd=0 when speed is above THIGH_RPM to allow reaching higher speeds.";
+    }
+    else if (key == "freewheel")
+    {
+        return "Set freewheeling/braking mode when motor current is zero (I_HOLD=0).\n0: Normal operation\n1: Freewheeling\n2: Passive braking, LS drivers\n3: Passinve braking, HS drivers";
+    }
+    else if (key == "TBL")
+    {
+        return "Comparator blank time.\n0: 16t_clk\n1: 24t_clk\n2: 36t_clk\n3: 54t_clk\nTypically use 1 or 2.";
+    }
+    else if (key == "TOFF")
+    {
+        return "Enable the motor driver with TOFF>0. Controls duration of slow decay phase. If TOFF=1, use it only with TBL>=2.";
+    }
+    else if (key == "HSTRT")
+    {
+        return "Hysteresis chopper start value added to HEND";
+    }
+    else if (key == "HEND")
+    {
+        return "Hysteresis chopper low value.";
+    }
+    else if (key == "IHOLDDELAY")
+    {
+        return "Number of clock cycles for motor power down after stand still is detected and TPOWERDOWN has expired. 0 means instant powerdown, 1-15 gives longer delay. ";
+    }
+    else if (key == "TPOWERDOWN")
+    {
+        return "Sets the delay time from motor stand still to motor power down.";
+    }
+    else if (key == "TZEROWAIT")
+    {
+        return "Waiting time at zero velocity before switching direction.";
+    }
+    else if (key == "TOFF")
+    {
+        return "Enable the motor driver with TOFF>0. Controls duration of slow decay phase. If TOFF=1, use it only with TBL>=2.";
+    }
+    else if (key == "semin")
+    {
+        return "Increase the motor current if StallGuard result is below semin*32. Set above 0 to enable CoolStep.";
+    }
+    else if (key == "semax")
+    {
+        return "Decrease the motor current if StallGuard result is above (semin+semax)*32.";
+    }
+    else if (key == "DC_SG")
+    {
+        return "StallGuard sensitivity in DcStep mode. Higher value means higher sensitivity. Set slightly higher than DC_TIME/16.";
+    }
+    else if (key == "DC_TIME")
+    {
+        return "Pulsewidth for DcStep load measurement. Lower limit is TBL (clock cycles, not value) + n, n from 1 to 100";
+    }
+    else if (key == "VSTOP")
+    {
+        return "The stopping velocity of the motor. Usually keep higher than VSTART.";
+    }
+    else if (key == "VSTART")
+    {
+        return "The starting velocity of the motor.";
+    }
+    else if (key == "VMAX_RPM")
+    {
+        return "The max speed of the motor.";
+    }
+    else if (key == "TPWMTHRS_RPM")
+    {
+        return "The upper speed threshold for StealthChop mode. ";
+    }
+    else if (key == "TCOOLTHRS_RPM")
+    {
+        return "The lower speed threshold for enabling StallGuard and and priming CoolStep. CoolStep will enable when the speed is above than THIGH_RPM.";
+    }
+    else if (key == "THIGH_RPM")
+    {
+        return "The lower speed threshold for changing chopper mode";
+    }
+    else if (key == "VDCMIN_RPM")
+    {
+        return "The lower speed threshold for DcStep. The motor will stop when falling below this when heavily loaded and sg_stop is enabled.";
+    }
+    else if (key == "AMAX_RPM_S_2")
+    {
+        return "The maximum acceleration rate, in RPM/s^2.";
+    }
+
+    return "Description missing.";
 }

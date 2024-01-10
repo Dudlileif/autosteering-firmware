@@ -7,6 +7,8 @@ Adafruit_BNO08x_RVC imuRVC;
 
 Adafruit_ADS1115 ads1115;
 
+unsigned long imuPrevUpdateTime = 0;
+
 BNO08x_RVC_Data currentImuReading;
 BNO08x_RVC_Data prevImuReading;
 
@@ -44,9 +46,14 @@ void wasInit()
 
 void updateImuReading()
 {
-    if (!imuRVC.read(&currentImuReading))
+    uint32_t now = micros();
+    if (now - imuPrevUpdateTime > IMU_UPDATE_PERIOD_US)
     {
-        return;
+        if (!imuRVC.read(&currentImuReading))
+        {
+            return;
+        }
+        imuPrevUpdateTime = now;
     }
 }
 
@@ -76,7 +83,7 @@ StaticJsonDocument<SENSOR_DATA_SIZE> getSensorData()
         data["motor_cs"] = stepperCurrentScale;
         if (motorCalibration)
         {
-            data["motor_pos"] = roundToNumberOfDecimals((stepperPositionActual), 2);
+            data["motor_pos"] = roundToNumberOfDecimals(rotationsFromPosition(stepperPositionActual), 2);
             data["motor_target"] = roundToNumberOfDecimals(rotationsFromPosition(stepperTargetPosition), 2);
         }
     }

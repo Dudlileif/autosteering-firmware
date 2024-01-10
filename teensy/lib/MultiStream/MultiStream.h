@@ -16,10 +16,13 @@ public:
         _stream2 = stream2;
     };
     ~MultiStream(){};
+    size_t print(const Printable &obj);
+
     int printf(const char *format, ...);
     int printf(const __FlashStringHelper *format, ...);
 
     size_t println(const char s[]);
+    size_t println(const Printable &obj);
 
     // Needed overrides to be a Stream/Print sub type.
     int available() { return 0; };

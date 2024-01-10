@@ -13,7 +13,7 @@ const char network_html[] PROGMEM = R"rawliteral(
             padding-top: 1rem;
             padding-right: 1rem;
             margin: auto;
-            max-width: 500px;
+            max-width: 750px;
         }
 
         .content h2 {

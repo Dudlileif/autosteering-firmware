@@ -31,21 +31,14 @@ void setup()
 
 void loop()
 {
-  while (digitalRead(PRIORITY_MESSAGE_SIGNAL_PIN))
+  while (priorityModeEnabled())
   {
     handlePriorityMessage();
   }
-  priorityMessageInProgress = false;
 
   updateStepper();
-
-  // if (Serial.available()) {
-  //   GNSS_SERIAL.write(Serial.read());
-  // }
   updateImuReading();
   sendSensorData();
-  // Serial.printf("%f, %f, %d\n", stepperTargetRPM, stepperRPMActual, stepperVMax);
-  // Serial.println(stepper.event_stop_sg());
 }
 
 void handlePriorityMessage()
@@ -59,6 +52,7 @@ void handlePriorityMessage()
   const char *message = NETWORK_SERIAL.readStringUntil('\n').c_str();
   if (strlen(message) > 0)
   {
+    Serial.println(message);
     Serial.printf("Priority message: \n\t%s\n", message);
     if (strstr(message, "FIRMWARE"))
     {
@@ -82,7 +76,34 @@ void handlePriorityMessage()
       Serial.println("Sending firmware version");
       NETWORK_SERIAL.println(firmwareDate);
     }
+    else if (strstr(message, "CRASH"))
+    {
+      NETWORK_SERIAL.print("CRASH REPORT");
+      NETWORK_SERIAL.println("");
+      NETWORK_SERIAL.print("CRASH REPORT");
+
+      if (CrashReport)
+      {
+        Serial.println("Crash report found, sending...");
+        NETWORK_SERIAL.print(CrashReport);
+        Serial.print(CrashReport);
+      }
+      else
+      {
+        Serial.println("No crash report found.");
+        NETWORK_SERIAL.print("No crash report.");
+      }
+      NETWORK_SERIAL.print('~');
+      NETWORK_SERIAL.println("");
+    }
+    else if (strstr(message, "REBOOT"))
+    {
+      Serial.println("Rebooting...");
+      SCB_AIRCR = 0x05FA0004;
+    }
   }
+  Serial.println("Priority message over.");
+  priorityMessageInProgress = false;
 }
 
 // Handle incoming USB/Serial data

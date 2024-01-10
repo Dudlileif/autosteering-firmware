@@ -6,7 +6,7 @@
 #include "Config/Config.h"
 #include "TeensyComms/TeensyComms.h"
 
-String firmwareDate = "2023-12-28";
+String firmwareDate = "2024-01-10";
 String teensyFirmwareDate;
 
 bool priorityMessageInProgress = false;

@@ -19,31 +19,46 @@ uint16_t stepperStallguardResult = 0;
 uint8_t stepperCurrentScale = 0;
 
 unsigned long stepperPrevUpdateTime = 0;
-unsigned long stepperLastCommandTime = 0;
+unsigned long stepperPrevCommandTime = 0;
 
 const uint32_t f_clk = 12000000;
-// On TMC5160 BOB          CSN   (r_sense, ohm)  SDI           SDO           SCK    (link_address)
+
+const float t_vel = 1.398101; // pow(2, 24) / f_clk
+const float t_acc = 0.015271; // pow(2, 41) / pow(f_clk, 2)
+
+// On TMC5160 BOB                          CSN   (r_sense, ohm)  SDI           SDO           SCK    (link_address)
 TMC5160Stepper stepper = TMC5160Stepper(PIN_SPI_SS1, 0.075, PIN_SPI_MOSI1, PIN_SPI_MISO1, PIN_SPI_SCK1, -1);
+
+uint32_t motorStallTime = 0;
 
 void stepperInit()
 {
-    stepper.begin();                                      // Start SPI connection with driver
-    stepper.push();                                       // Not sure if needed
+    pinMode(MOTOR_ENABLE_PIN, OUTPUT);
+
+    stepper.begin(); // Start SPI connection with driver
+    stepper.setSPISpeed(4000000);
     stepper.toff(motorConfig.TOFF);                       // Enable the driver with toff > 0
     stepper.microsteps(motorConfig.MICRO_STEPS);          // Set MICRO_STEPS
     stepper.hold_multiplier(motorConfig.hold_multiplier); // 0..1, multiplier to get IHOLD from IRUN.
     stepper.rms_current(motorConfig.RMS_CURRENT);         // Set the motor current (mA)
-    stepper.IHOLD_IRUN(motorConfig.IHOLD_IRUN);           // 0..31, Current scale when motor is running. IRUN=IHOLD_IRUN, IHOLD = hold_multiplier*IHOLD_IRUN.
     stepper.iholddelay(motorConfig.IHOLDDELAY);           // 0..15, IHOLDDELAY * 2^18 clock cycles after TZEROWAIT per current decrement from run to hold, 0 means instant hold
     stepper.freewheel(motorConfig.freewheel);             // Stand still option when motor current is zero, 0: normal op., 1: freewheeling, 2: coil shorted with LS drivers,
-                                                          // 3: coil shorted with HS driver
-    stepper.tbl(motorConfig.TBL);                         // 0..3, Comparator blank time, 0: 16 t_clk, 1: 24 t_clk, 2: 36 t_clk, 3: 54 t_clk
-    stepper.hstrt(motorConfig.HSTRT);                     // 0...15 -> -3...12, Hysteresis start value added to HEND.
-    stepper.hend(motorConfig.HEND);                       // 0...15 -> -3...12, Hysteresis low value.
+    // 3: coil shorted with HS driver
+    stepper.tbl(motorConfig.TBL);     // 0..3, Comparator blank time, 0: 16 t_clk, 1: 24 t_clk, 2: 36 t_clk, 3: 54 t_clk
+    stepper.hstrt(motorConfig.HSTRT); // 0...15 -> -3...12, Hysteresis start value added to HEND.
+    stepper.hend(motorConfig.HEND);   // 0...15 -> -3...12, Hysteresis low value.
     // Sets the delay time after stand still until the motor current powers
     // down.
     // 0..255 * 2^18*t_clk
     stepper.TPOWERDOWN(motorConfig.TPOWERDOWN);
+
+    stepper.VSTART(motorConfig.VSTART);
+    stepper.VSTOP(motorConfig.VSTOP);
+    stepper.AMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
+    stepper.DMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
+    stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM));
+    stepper.a1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
+    stepper.d1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
 
     // Sets the wait time at zero velocity after a ramp before continuing
     // to the other side of zero.
@@ -53,31 +68,30 @@ void stepperInit()
     // StealthChop
     stepper.en_pwm_mode(motorConfig.en_pwm_mode);     // Enable StealthChop when T > TPWMTHRS
     stepper.pwm_autoscale(motorConfig.pwm_autoscale); // Enable automatic current control, PWM amplitude scaling
-    stepper.pwm_autograd(true);                       // Enable automatic PWM gradient adaptation
+    stepper.pwm_autograd(motorConfig.pwm_autograd);   // Enable automatic PWM gradient adaptation
 
-    // Stallguard
+    // Stallguard and CoolStep
     stepper.sfilt(motorConfig.sfilt); // Require 4 fullsteps for measurement
-    stepper.sgt(motorConfig.SGT);     // 32 , range -64 -> 63 (high to low sensitivity)
+    stepper.sgt(motorConfig.SGT);     // Range -64 -> 63 (high to low sensitivity)
     stepper.sg_stop(motorConfig.sg_stop);
+    stepper.TCOOLTHRS(tFromRPM(motorConfig.TCOOLTHRS_RPM)); // Enable Stallguard and CoolStep when RPM > TCOOLTHRS_RPM
+    stepper.semin(motorConfig.semin);                       // If sg_result < semin*32, current is increased
+    stepper.semax(motorConfig.semax);                       // If sg_result > (semin+semax+1)*32, current is decreased
 
     // SpreadCycle
-    stepper.TPWMTHRS(motorConfig.TPWMTHRS); // Switch to SpreadCycle when T < TPWMTHRS
+    stepper.TPWMTHRS(tFromRPM(motorConfig.TPWMTHRS_RPM)); // Switch to SpreadCycle when T < TPWMTHRS
     stepper.chm(motorConfig.chm);
 
-    // CoolStep
-    stepper.TCOOLTHRS(motorConfig.TCOOLTHRS); // Enable CoolStep when T < 120
-    stepper.semin(motorConfig.semin);         // If sg_result < semin*32, current is increased
-    stepper.semax(motorConfig.semax);         // If sg_result > (semin+semax+1)*32, current is decreased
-
     // DC step
-    stepper.THIGH(motorConfig.THIGH);       // Enable DcStep when T < 100, disables CoolStep and StallGuard
-    stepper.vhighfs(motorConfig.vhighfs);   // Enable fullstep at high velocities
-    stepper.vhighchm(motorConfig.vhighchm); // Switches to chm(1) and fd(0) when exceeding VHIGH
-    stepper.VDCMIN(motorConfig.VDCMIN);
+    stepper.THIGH(tFromRPM(motorConfig.THIGH_RPM)); // Enable DcStep when T < 100, disables CoolStep and StallGuard
+    stepper.vhighfs(motorConfig.vhighfs);           // Enable fullstep at high velocities
+    stepper.vhighchm(motorConfig.vhighchm);         // Switches to chm(1) and fd(0) when exceeding VHIGH
+    stepper.VDCMIN(tFromRPM(motorConfig.VDCMIN_RPM));
     stepper.dc_time(motorConfig.DC_TIME);
     stepper.dc_sg(motorConfig.DC_SG);
 
     Serial.println("Stepper initialized.");
+    restartStepper();
 }
 
 int32_t positionFromRotations(float rotations)
@@ -87,33 +101,56 @@ int32_t positionFromRotations(float rotations)
 
 float rotationsFromPosition(int32_t position)
 {
-    return position / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
+    return float(position) / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
 }
 
 uint32_t velocityFromRPM(float rpm)
 {
-    return round(rpm / 60.0 * motorConfig.MICRO_STEPS * motorConfig.STEPS_PER_ROT);
+    return round(rpm / 60 * t_vel * motorConfig.MICRO_STEPS * motorConfig.STEPS_PER_ROT);
 }
 
-float rpmFromVelocity(uint32_t velocity)
+float rpmFromVelocity(int32_t velocity)
 {
-    return velocity * 60 / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
+    return velocity * 60 / t_vel / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
 }
 
 uint32_t tFromVelocity(uint32_t velocity)
 {
-    return pow(2, 24) / (velocity * 256 / motorConfig.MICRO_STEPS);
+    return constrain(pow(2, 24) / (velocity * 256 / motorConfig.MICRO_STEPS), 0, pow(2, 20) - 1);
 }
 
 uint32_t tFromRPM(float rpm)
 {
-    return pow(2, 24) / (velocityFromRPM(rpm) * 256 / motorConfig.MICRO_STEPS);
+    return tFromVelocity(velocityFromRPM(rpm));
+}
+
+uint32_t velocityFromT(uint32_t t)
+{
+    return pow(2, 24) / (t * 256 / motorConfig.MICRO_STEPS);
+}
+
+float rpmFromT(uint32_t t)
+{
+    return rpmFromVelocity(velocityFromT(t));
+}
+
+uint32_t accelerationFromRPMS2(float rpms2)
+{
+    return constrain(velocityFromRPM(rpms2) * t_acc, 0, pow(2, 16) - 1);
+}
+
+float rpms2FromAcceleration(uint32_t acceleration)
+{
+    return rpmFromVelocity(acceleration) / t_acc;
 }
 
 void restartStepper()
 {
+    stepper.toff(0);
     stepper.sg_stop(0);
     stepper.sg_stop(motorConfig.sg_stop);
+    stepper.toff(motorConfig.TOFF);
+    Serial.println("Stepper restarted.");
 }
 
 void handleMotorControls(DynamicJsonDocument &document)
@@ -127,27 +164,41 @@ void handleMotorControls(DynamicJsonDocument &document)
     if (!motorRPM.isNull())
     {
         stepperTargetRPM = motorRPM;
-        stepperLastCommandTime = micros();
+
+        if (!enableMotor.isNull())
+        {
+            if (motorEnabled != enableMotor && micros() - motorStallTime > 5e6)
+            {
+                restartStepper();
+            }
+            motorEnabled = enableMotor;
+        }
     }
     else if (!calibrate.isNull())
     {
-        motorCalibration = calibrate;
-        stepperLastCommandTime = micros();
-    }
-    if (!enableMotor.isNull())
-    {
-        if (motorEnabled != enableMotor)
+        if (!motorCalibration)
         {
-            restartStepper();
+            motorEnabled = true;
         }
-        motorEnabled = enableMotor;
+        motorCalibration = calibrate;
     }
+    else
+    {
+        motorCalibration = false;
+        motorEnabled = false;
+        Serial.println("Motor stopped.");
+        char message[] = "{\"motor_enabled\": false}";
+        sendToProgram(message, sizeof(message));
+    }
+    stepperPrevCommandTime = micros();
 }
 
 void updateStepper()
 {
+    digitalWrite(MOTOR_ENABLE_PIN, !motorEnabled);
+
     unsigned long now = micros();
-    if (now - stepperLastCommandTime > STEPPER_COMMAND_UPDATE_US)
+    if (now - stepperPrevCommandTime > STEPPER_COMMAND_UPDATE_US)
     {
         if (motorEnabled)
         {
@@ -156,9 +207,10 @@ void updateStepper()
             motorEnabled = false;
             Serial.println("Motor stopped, too long since last command.");
 
-            char message[29] = "{\"motor_no_command\": true}";
+            char message[] = "{\"motor_no_command\": true}";
             sendToProgram(message, sizeof(message));
         }
+        motorCalibration = false;
     }
     if (now - stepperPrevUpdateTime > STEPPER_PERIOD_US)
     {
@@ -173,6 +225,13 @@ void updateStepper()
         {
             if (motorEnabled)
             {
+                if (stepper.stallguard())
+                {
+                    Serial.println("Motor stalled.");
+                    motorStallTime = now;
+                    motorEnabled = false;
+                }
+                else
                 {
                     int32_t absTargetPosition = positionFromRotations(motorConfig.CAL_ROT);
                     if (abs(stepperTargetPosition) != absTargetPosition)
@@ -180,42 +239,47 @@ void updateStepper()
                         stepperTargetPosition = absTargetPosition;
                     }
 
-                    if (stepperPositionActual == stepperTargetPosition && stepperTargetPosition != 0)
+                    if (stepper.position_reached())
                     {
                         stepperTargetPosition *= -1;
                     }
 
-                    stepper.AMAX(motorConfig.AMAX);
-                    stepper.DMAX(motorConfig.AMAX);
-                    stepper.VMAX(velocityFromRPM(motorConfig.RPMMAX));
-                    stepper.v1(0);
-                    stepper.VSTOP(10);
+                    stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
                     stepper.RAMPMODE(positioning);
                     stepper.XTARGET(stepperTargetPosition);
+
+                    // Serial.printf(
+                    //     "TOFF: %2d, Pos: %12d, Target: %12d, Vel: %12d, RPM: %5.1f, TSTEP: %7d, CS: %2d, GSTAT: %d%d%d, SG: %4d, FS: %1d\n",
+                    //     stepper.toff(),
+                    //     stepper.XACTUAL(),
+                    //     stepper.XTARGET(),
+                    //     stepper.VACTUAL(),
+                    //     stepperRPMActual,
+                    //     stepper.TSTEP(),
+                    //     stepperCurrentScale,
+                    //     stepper.reset(), stepper.drv_err(), stepper.uv_cp(),
+                    //     stepperStallguardResult,
+                    //     stepper.fsactive());
                 }
             }
-            else
+            else if (!motorEnabled && now - motorStallTime > 5e6)
             {
-                stepper.RAMPMODE(hold);
+                restartStepper();
+                motorEnabled = true;
             }
         }
         else
         {
             float absTargetRPM = abs(stepperTargetRPM);
 
-            float constrainedRPMTarget = constrain(absTargetRPM, 0.0, motorConfig.RPMMAX);
+            float constrainedRPMTarget = constrain(absTargetRPM, 0.0, motorConfig.VMAX_RPM);
 
             stepperVMax = velocityFromRPM(constrainedRPMTarget);
 
             stepperRampMode = stepperTargetRPM < 0 ? negative : positive;
 
-            stepper.AMAX(motorConfig.AMAX);
             stepper.VMAX(motorEnabled ? stepperVMax : 0);
-            stepper.VSTOP(10);
             stepper.RAMPMODE(stepperRampMode);
-            // Serial.printf("RPM_MAX:%f, RPM:%f\n",
-            //               stepper.VMAX() / MICRO_STEPS / STEPS_PER_ROT * 60.0 * (stepperDirection == 1 ? 1 : -1),
-            //               stepperRPMActual);
 
             if (motorEnabled)
             {
@@ -226,15 +290,10 @@ void updateStepper()
                     char message[26] = "{\"motor_stalled\": true}";
                     sendToProgram(message, sizeof(message));
                 }
-                else
-                {
-                    // Serial.printf("{FS: %d, SG: %d, T: %d, V: %d, RPM: %3.1f}\n",
-                    //               stepper.fsactive(),
-                    //               stepper.sg_result(),
-                    //               stepper.TSTEP(),
-                    //               stepper.VACTUAL(),
-                    //               stepperRPMActual);
-                }
+            }
+            else
+            {
+                stepper.VMAX(0);
             }
         }
     }

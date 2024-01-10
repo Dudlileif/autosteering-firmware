@@ -25,7 +25,7 @@ void setup()
   digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
 
   Serial.begin(SERIAL_BAUD);
-  Serial.printf("Firmware date: %s\n", firmwareDate);
+  Serial.printf("ESP32 Firmware date: %s\n", firmwareDate);
 
   TEENSY_SERIAL.setRxBufferSize(256);
   TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
@@ -40,12 +40,14 @@ void setup()
   Serial.println("Saved WiFi config json:");
   wifiConfig.printToStreamPretty(&Serial);
 
-  Serial.println("Saved Teensy config json:");
+  Serial.println("Saved Motor config json:");
   motorConfig.printToStreamPretty(&Serial);
 
   delay(100);
 
   sendMotorConfig();
+
+  getTeensyCrashReport(true);
 
   getTeensyFirmwareVersion(true);
   if (wifiConfig.startInAPMode || strlen(wifiConfig.ssid[0]) == 0)
@@ -72,7 +74,7 @@ void loop()
 
   checkWiFiStatus();
 
-  if (!uploadingFile && destinations)
+  if (!uploadingFile && destinations && !priorityMessageInProgress)
   {
 
     uint8_t buffer[100];
@@ -101,6 +103,8 @@ void loop()
     {
       TEENSY_SERIAL.write(tcpPacketBuffer, tcpPacketSize);
     }
+
+    checkIfTeensyIsResponding();
   }
 }
 

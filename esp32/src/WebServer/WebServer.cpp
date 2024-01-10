@@ -36,6 +36,11 @@ String networkForm(uint16_t i, String initialSSID, String initialPassword)
 
 String numberForm(String label, String name, String id, int32_t minValue, int32_t maxValue, int32_t initialValue)
 {
+  return numberForm(label, name, id, minValue, maxValue, initialValue, "");
+}
+
+String numberForm(String label, String name, String id, int32_t minValue, int32_t maxValue, int32_t initialValue, String description)
+{
   String form = R"(
     <tr>
         <td>
@@ -44,7 +49,6 @@ String numberForm(String label, String name, String id, int32_t minValue, int32_
         <td>
           <input type="number" min=%MIN% max=%MAX% name="%NAME%" id="%ID%" value="%VALUE%">
         </td>
-    </tr>
     )";
   form.replace("%LABEL%", label);
   form.replace("%NAME%", name);
@@ -52,9 +56,28 @@ String numberForm(String label, String name, String id, int32_t minValue, int32_
   form.replace("%MIN%", String(minValue));
   form.replace("%MAX%", String(maxValue));
   form.replace("%VALUE%", String(initialValue));
+
+  if (!description.isEmpty())
+  {
+    form += R"(
+      <td>
+        %DESCRIPTION%
+      </td>
+    )";
+    form.replace("%DESCRIPTION%", description);
+  }
+
+  form += "</tr>";
   return form;
 }
+
 String numberForm(String label, String name, String id, int32_t minValue, uint32_t maxValue, uint32_t initialValue)
+{
+  return numberForm(label, name, id, minValue, maxValue, initialValue, "");
+}
+
+String numberForm(String label, String name, String id, int32_t minValue, uint32_t maxValue, uint32_t initialValue, String description)
+
 {
   String form = R"(
       <tr>
@@ -64,7 +87,6 @@ String numberForm(String label, String name, String id, int32_t minValue, uint32
         <td>
           <input type="number" min=%MIN% max=%MAX% name="%NAME%" id="%ID%" value="%VALUE%">
         </td>
-    </tr>
     )";
   form.replace("%LABEL%", label);
   form.replace("%NAME%", name);
@@ -72,9 +94,27 @@ String numberForm(String label, String name, String id, int32_t minValue, uint32
   form.replace("%MIN%", String(minValue));
   form.replace("%MAX%", String(maxValue));
   form.replace("%VALUE%", String(initialValue));
+
+  if (!description.isEmpty())
+  {
+    form += R"(
+      <td>
+        %DESCRIPTION%
+      </td>
+    )";
+    form.replace("%DESCRIPTION%", description);
+  }
+
+  form += "</tr>";
   return form;
 }
+
 String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue)
+{
+  return numberForm(label, name, id, minValue, maxValue, increment, initialValue, "");
+}
+
+String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue, String description)
 {
   String form = R"(
       <tr>
@@ -84,8 +124,8 @@ String numberForm(String label, String name, String id, float minValue, float ma
         <td>
           <input type="number" min=%MIN% max=%MAX% step="%INCREMENT%" name="%NAME%" id="%ID%" value="%VALUE%">
         </td>
-    </tr>
     )";
+
   form.replace("%LABEL%", label);
   form.replace("%NAME%", name);
   form.replace("%ID%", id);
@@ -93,6 +133,19 @@ String numberForm(String label, String name, String id, float minValue, float ma
   form.replace("%MAX%", String(maxValue));
   form.replace("%INCREMENT%", String(increment));
   form.replace("%VALUE%", String(initialValue));
+
+  if (!description.isEmpty())
+  {
+    form += R"(
+      <td>
+        %DESCRIPTION%
+      </td>
+    )";
+    form.replace("%DESCRIPTION%", description);
+  }
+
+  form += "</tr>";
+
   return form;
 }
 
@@ -247,79 +300,95 @@ String microStepsForm(uint16_t value)
   return entry;
 }
 
+String checkboxForm(String label, String name, String id, bool checked, String function, String description)
+{
+  String form = R"=====(
+    <tr>
+        <td>
+          <h4>%LABEL%</h4>
+        </td>
+        <td>
+          <input type="checkbox" name="%NAME%" id="%ID%" %CHECKED% onClick="%FUNCTION%(this)">
+        </td>
+    )=====";
+  form.replace("%LABEL%", label);
+  form.replace("%NAME%", name);
+  form.replace("%ID%", id);
+  form.replace("%CHECKED%", checked ? "checked" : "");
+  form.replace("%FUNCTION%", function);
+
+  if (!description.isEmpty())
+  {
+    form += R"(
+      <td>
+        %DESCRIPTION%
+      </td>
+    )";
+    form.replace("%DESCRIPTION%", description);
+  }
+
+  form += "</tr>";
+  return form;
+}
+
 String motorProcessor(const String &var)
 {
   if (var == "MOTOR_CONFIG_PLACEHOLDER")
   {
     String form;
+    motorConfig.json().as<JsonObject>();
     for (JsonPair kv : motorConfig.json().as<JsonObject>())
     {
       String key = String(kv.key().c_str());
 
       // Filter boolean parameters
-      if (key == "en_pwm_mode" || key == "pwm_auto_scale" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm")
+      if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm")
       {
-        form += numberForm(key, key, key, 0, 1, int(kv.value()));
+        form += checkboxForm(key, key, key, bool(kv.value()), "toggleCheckbox", motorConfig.getDescription(key));
       }
       else if (key == "hold_multiplier")
       {
-        form += numberForm(key, key, key, 0.0, 1.0, 0.05, float(kv.value()));
+        form += numberForm(key, key, key, 0.0, 1.0, 0.01, float(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "CAL_ROT")
       {
-        form += numberForm(key, key, key, 0.0, 10.0, 0.1, float(kv.value()));
+        form += numberForm(key, key, key, 0.0, 100.0, 0.1, float(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "SGT")
       {
-        form += numberForm(key, key, key, -64, 63, int8_t(kv.value()));
+        form += numberForm(key, key, key, -64, 63, int8_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "freewheel" || key == "TBL")
       {
-        form += numberForm(key, key, key, 0, 3, uint8_t(kv.value()));
+        form += numberForm(key, key, key, 0, 3, uint8_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "TOFF" || key == "HSTRT" || key == "HEND" || key == "IHOLDDELAY" || key == "semin" || key == "semax")
       {
-        form += numberForm(key, key, key, 0, 15, uint8_t(kv.value()));
-      }
-      else if (key == "IHOLD_IRUN")
-      {
-        form += numberForm(key, key, key, 0, 31, uint8_t(kv.value()));
+        form += numberForm(key, key, key, 0, 15, uint8_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "DC_SG" || key == "TPOWERDOWN")
       {
-        form += numberForm(key, key, key, 0, 255, uint8_t(kv.value()));
+        form += numberForm(key, key, key, 0, 255, uint8_t(kv.value()), motorConfig.getDescription(key));
       }
-      else if (key == "RPMMAX")
+      else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S_2")
       {
-        form += numberForm(key, key, key, 0, 500, uint16_t(kv.value()));
+        form += numberForm(key, key, key, 0.0, 1000.0, 1.0, float(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "DC_TIME")
       {
-        form += numberForm(key, key, key, 0, 1023, uint16_t(kv.value()));
+        form += numberForm(key, key, key, 0, 1023, uint16_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "RMS_CURRENT")
       {
-        form += numberForm(key, key, key, 0, 5000, uint16_t(kv.value()));
+        form += numberForm(key, key, key, 0, 3000, uint16_t(kv.value()), motorConfig.getDescription(key));
       }
-      else if (key == "AMAX" || key == "TZEROWAIT")
+      else if (key == "TZEROWAIT")
       {
-        form += numberForm(key, key, key, 0, pow(2, 16) - 1, uint16_t(kv.value()));
+        form += numberForm(key, key, key, 0, pow(2, 16) - 1, uint16_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "VSTOP" || key == "VSTART")
       {
-        form += numberForm(key, key, key, 0, pow(2, 18) - 1, uint16_t(kv.value()));
-      }
-      else if (key == "TPWMTHRS" || key == "TCOOLTHRS")
-      {
-        form += numberForm(key, key, key, 0, uint32_t(1048575), uint32_t(kv.value()));
-      }
-      else if (key == "THIGH")
-      {
-        form += numberForm(key, key, key, 1, pow(2, 20) - 1, uint32_t(kv.value()));
-      }
-      else if (key == "VDCMIN")
-      {
-        form += numberForm(key, key, key, 1, pow(2, 22) - 1, uint32_t(kv.value()));
+        form += numberForm(key, key, key, 0, pow(2, 18) - 1, uint16_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key != "MICRO_STEPS" && key != "STEPS_PER_ROT")
       {
@@ -366,6 +435,19 @@ String motorProcessor(const String &var)
       form += entry;
     }
     return form;
+  }
+  return String();
+}
+
+String teensyProcessor(const String &var)
+{
+  if (var == "TEENSY_CRASH_REPORT")
+  {
+    if (teensyCrashReport.isEmpty())
+    {
+      return String("No crash report found.");
+    }
+    return teensyCrashReport;
   }
   return String();
 }
@@ -492,34 +574,33 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request)
 void onUpdateMotorConfig(AsyncWebServerRequest *request)
 {
   Serial.println("Received motor config update");
-
-  if (request->hasParam("AMAX"))
+  if (request->hasParam("AMAX_RPM_S_2"))
   {
-    motorConfig.AMAX = request->getParam("AMAX")->value().toInt();
+    motorConfig.AMAX_RPM_S_2 = constrain(request->getParam("AMAX_RPM_S_2")->value().toFloat(), 0.0, 3597);
   }
-  if (request->hasParam("RPMMAX"))
+  if (request->hasParam("VMAX_RPM"))
   {
-    motorConfig.RPMMAX = request->getParam("RPMMAX")->value().toInt();
+    motorConfig.VMAX_RPM = constrain(request->getParam("VMAX_RPM")->value().toFloat(), 0.0, 1000);
   }
   if (request->hasParam("VSTOP"))
   {
-    motorConfig.VSTOP = request->getParam("VSTOP")->value().toInt();
+    motorConfig.VSTOP = constrain(request->getParam("VSTOP")->value().toInt(), 0, pow(2, 18) - 1);
   }
   if (request->hasParam("VSTART"))
   {
-    motorConfig.VSTART = request->getParam("VSTART")->value().toInt();
+    motorConfig.VSTART = constrain(request->getParam("VSTART")->value().toInt(), 0, pow(2, 18) - 1);
   }
   if (request->hasParam("TOFF"))
   {
-    motorConfig.TOFF = request->getParam("TOFF")->value().toInt();
+    motorConfig.TOFF = constrain(request->getParam("TOFF")->value().toInt(), 0, 15);
   }
   if (request->hasParam("HSTRT"))
   {
-    motorConfig.HSTRT = request->getParam("HSTRT")->value().toInt();
+    motorConfig.HSTRT = constrain(request->getParam("HSTRT")->value().toInt(), 0, 15);
   }
   if (request->hasParam("HEND"))
   {
-    motorConfig.HEND = request->getParam("HEND")->value().toInt();
+    motorConfig.HEND = constrain(request->getParam("HEND")->value().toInt(), 0, 15);
   }
   if (request->hasParam("MICRO_STEPS"))
   {
@@ -531,103 +612,135 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request)
   }
   if (request->hasParam("RMS_CURRENT"))
   {
-    motorConfig.RMS_CURRENT = request->getParam("RMS_CURRENT")->value().toInt();
-  }
-  if (request->hasParam("IHOLD_IRUN"))
-  {
-    motorConfig.IHOLD_IRUN = request->getParam("IHOLD_IRUN")->value().toInt();
+    motorConfig.RMS_CURRENT = constrain(request->getParam("RMS_CURRENT")->value().toInt(), 0, 3000);
   }
   if (request->hasParam("hold_multiplier"))
   {
-    motorConfig.hold_multiplier = request->getParam("hold_multiplier")->value().toInt();
+    motorConfig.hold_multiplier = constrain(request->getParam("hold_multiplier")->value().toFloat(), 0.0, 1.0);
   }
   if (request->hasParam("IHOLDDELAY"))
   {
-    motorConfig.IHOLDDELAY = request->getParam("IHOLDDELAY")->value().toInt();
+    motorConfig.IHOLDDELAY = constrain(request->getParam("IHOLDDELAY")->value().toInt(), 0, 15);
   }
   if (request->hasParam("freewheel"))
   {
-    motorConfig.freewheel = request->getParam("freewheel")->value().toInt();
+    motorConfig.freewheel = constrain(request->getParam("freewheel")->value().toInt(), 0, 3);
   }
   if (request->hasParam("TBL"))
   {
-    motorConfig.TBL = request->getParam("TBL")->value().toInt();
+    motorConfig.TBL = constrain(request->getParam("TBL")->value().toInt(), 0, 3);
   }
   if (request->hasParam("TPOWERDOWN"))
   {
-    motorConfig.TPOWERDOWN = request->getParam("TPOWERDOWN")->value().toInt();
+    motorConfig.TPOWERDOWN = constrain(request->getParam("TPOWERDOWN")->value().toInt(), 0, 255);
   }
   if (request->hasParam("TZEROWAIT"))
   {
-    motorConfig.TZEROWAIT = request->getParam("TZEROWAIT")->value().toInt();
+    motorConfig.TZEROWAIT = constrain(request->getParam("TZEROWAIT")->value().toInt(), 0, pow(2, 16) - 1);
   }
   if (request->hasParam("en_pwm_mode"))
   {
-    motorConfig.en_pwm_mode = bool(request->getParam("en_pwm_mode")->value().toInt());
+    const String value = request->getParam("en_pwm_mode")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.en_pwm_mode = bool(value.toInt());
+    }
   }
   if (request->hasParam("pwm_autoscale"))
   {
-    motorConfig.pwm_autoscale = bool(request->getParam("pwm_autoscale")->value().toInt());
+    const String value = request->getParam("pwm_autoscale")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.pwm_autoscale = bool(value.toInt());
+    }
+  }
+  if (request->hasParam("pwm_autograd"))
+  {
+    const String value = request->getParam("pwm_autograd")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.pwm_autograd = bool(value.toInt());
+    }
   }
   if (request->hasParam("SGT"))
   {
-    motorConfig.SGT = request->getParam("SGT")->value().toInt();
+    motorConfig.SGT = constrain(request->getParam("SGT")->value().toInt(), -64, 63);
   }
   if (request->hasParam("sfilt"))
   {
-    motorConfig.sfilt = bool(request->getParam("sfilt")->value().toInt());
+    const String value = request->getParam("sfilt")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.sfilt = bool(value.toInt());
+    }
   }
   if (request->hasParam("sg_stop"))
   {
-    motorConfig.sg_stop = bool(request->getParam("sg_stop")->value().toInt());
+    const String value = request->getParam("sg_stop")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.sg_stop = bool(value.toInt());
+    }
   }
-  if (request->hasParam("TPWMTHRS"))
+  if (request->hasParam("TPWMTHRS_RPM"))
   {
-    motorConfig.TPWMTHRS = request->getParam("TPWMTHRS")->value().toInt();
+    motorConfig.TPWMTHRS_RPM = constrain(request->getParam("TPWMTHRS_RPM")->value().toFloat(), 0.0, 1000);
   }
   if (request->hasParam("chm"))
   {
-    motorConfig.chm = bool(request->getParam("chm")->value().toInt());
+    const String value = request->getParam("chm")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.chm = bool(value.toInt());
+    }
   }
-  if (request->hasParam("TCOOLTHRS"))
+  if (request->hasParam("TCOOLTHRS_RPM"))
   {
-    motorConfig.TCOOLTHRS = request->getParam("TCOOLTHRS")->value().toInt();
+    motorConfig.TCOOLTHRS_RPM = constrain(request->getParam("TCOOLTHRS_RPM")->value().toFloat(), 0.0, 1000);
   }
   if (request->hasParam("semin"))
   {
-    motorConfig.semin = request->getParam("semin")->value().toInt();
+    motorConfig.semin = constrain(request->getParam("semin")->value().toInt(), 0, 15);
   }
   if (request->hasParam("semax"))
   {
-    motorConfig.semax = request->getParam("semax")->value().toInt();
+    motorConfig.semax = constrain(request->getParam("semax")->value().toInt(), 0, 15);
   }
-  if (request->hasParam("THIGH"))
+  if (request->hasParam("THIGH_RPM"))
   {
-    motorConfig.THIGH = request->getParam("THIGH")->value().toInt();
+    motorConfig.THIGH_RPM = constrain(request->getParam("THIGH_RPM")->value().toFloat(), 0.0, 1000);
   }
   if (request->hasParam("vhighfs"))
   {
-    motorConfig.vhighfs = bool(request->getParam("vhighfs")->value().toInt());
+    const String value = request->getParam("vhighfs")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.vhighfs = bool(value.toInt());
+    }
   }
   if (request->hasParam("vhighchm"))
   {
-    motorConfig.vhighchm = bool(request->getParam("vhighchm")->value().toInt());
+    const String value = request->getParam("vhighchm")->value();
+    if (value.length() == 1)
+    {
+      motorConfig.vhighchm = bool(value.toInt());
+    }
   }
-  if (request->hasParam("VDCMIN"))
+  if (request->hasParam("VDCMIN_RPM"))
   {
-    motorConfig.VDCMIN = request->getParam("VDCMIN")->value().toInt();
+    motorConfig.VDCMIN_RPM = constrain(request->getParam("VDCMIN_RPM")->value().toFloat(), 0.0, 1000);
   }
   if (request->hasParam("DC_TIME"))
   {
-    motorConfig.DC_TIME = request->getParam("DC_TIME")->value().toInt();
+    motorConfig.DC_TIME = constrain(request->getParam("DC_TIME")->value().toInt(), 0, 1023);
   }
   if (request->hasParam("DC_SG"))
   {
-    motorConfig.DC_SG = request->getParam("DC_SG")->value().toInt();
+    motorConfig.DC_SG = constrain(request->getParam("DC_SG")->value().toInt(), 0, 255);
   }
   if (request->hasParam("CAL_ROT"))
   {
-    motorConfig.CAL_ROT = request->getParam("CAL_ROT")->value().toInt();
+    motorConfig.CAL_ROT = constrain(request->getParam("CAL_ROT")->value().toFloat(), 0.0, 100);
   }
 
   if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)
@@ -690,8 +803,21 @@ void startWebServer()
   webServer->on("/motor", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send_P(200, "text/html", motor_html, motorProcessor); });
 
+  webServer->on("/teensy", HTTP_GET, [](AsyncWebServerRequest *request)
+                { request->send_P(200, "text/html", teensy_html, teensyProcessor); });
+
   webServer->on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request)
-                { ESP.restart(); });
+                { request->redirect("/"); 
+                ESP.restart(); });
+
+  webServer->on("/reboot_teensy", HTTP_GET, [](AsyncWebServerRequest *request)
+                { rebootTeensy(); 
+                request->redirect("/"); });
+
+  webServer->on("/refresh_teensy_crash_report", HTTP_GET, [](AsyncWebServerRequest *request)
+                { 
+                  bool success = getTeensyCrashReport(true);
+    request->redirect("/teensy"); });
 
   webServer->on("/refresh_teensy_version", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 

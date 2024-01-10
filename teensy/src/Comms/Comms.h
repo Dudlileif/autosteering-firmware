@@ -2,6 +2,9 @@
 #define COMMS_H
 
 #include <Arduino.h>
+#include <MultiStream.h>
+
+extern MultiStream usbAndNetworkSerial;
 
 extern boolean enableSerial;
 

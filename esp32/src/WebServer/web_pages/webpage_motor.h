@@ -13,7 +13,7 @@ const char motor_html[] PROGMEM = R"rawliteral(
             padding-top: 1rem;
             padding-right: 1rem;
             margin: auto;
-            max-width: 500px;
+            max-width: 750px;
         }
 
         .content h2 {
@@ -36,15 +36,18 @@ const char motor_html[] PROGMEM = R"rawliteral(
         </form>
         <h3>Motor configuration</h3>
         <p>The parameters are labelled in the same way as the ones in the official documentation for the TMC5160.
+            Parameters for most velocities, acceleration and thresholds have been converted to RPM to make them more
+            tangeable, these are noted with an _RPM suffix.
             <a
                 href="https://www.analog.com/media/en/technical-documentation/data-sheets/TMC5160A_datasheet_rev1.18.pdf">
-                Link to pdf</a>
+                Link to TMC5160 documentation pdf</a>
         </p>
         <form action="/update_motor_config">
             <table>
                 <tr>
                     <th>Parameter</th>
                     <th>Value</th>
+                    <th>Description</th>
                 </tr>
                 <tr>
                     <td>
@@ -53,6 +56,9 @@ const char motor_html[] PROGMEM = R"rawliteral(
                     <td>
                         %MICRO_STEPS_PLACEHOLDER%
                     </td>
+                    <td>
+                        The number of micro steps to divide a full step of the motor into.
+                    </td>
                 </tr>
                 <tr>
                     <td>
@@ -60,6 +66,9 @@ const char motor_html[] PROGMEM = R"rawliteral(
                     </td>
                     <td>
                         %STEPS_PER_ROT_PLACEHOLDER%
+                    </td>
+                    <td>
+                        The number of full steps for one rotation of the motor.
                     </td>
                 </tr>
                 %MOTOR_CONFIG_PLACEHOLDER%
@@ -74,6 +83,14 @@ const char motor_html[] PROGMEM = R"rawliteral(
             </table>
         </form>
     </div>
+    <script>
+        function toggleCheckbox(element) {
+            var xhr = new XMLHttpRequest();
+            if (element.checked) { xhr.open("GET", "/update_motor_config?" + element.id + "=1", true); }
+            else { xhr.open("GET", "/update_motor_config?" + element.id + "=0", true); }
+            xhr.send();
+        }
+    </script>
 </body>
 
 </html>
