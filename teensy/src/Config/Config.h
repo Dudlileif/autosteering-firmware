@@ -18,8 +18,6 @@ const int LED_PIN = 13;
 
 const int MOTOR_ENABLE_PIN = 2;
 
-const int IMU_UPDATE_PERIOD_US = 10000; // 100 Hz, IMU in RVC mode outputs 100 Hz on serial.
-
 const int SENSOR_PERIOD_US = 10000; // 100 Hz, higher might intervene with GNSS messages, might
                                     // have to be lowered further when adding more sensors/data.
                                     // Sets how often sensor messages get sent from the hardware.
