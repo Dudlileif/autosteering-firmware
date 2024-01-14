@@ -8,22 +8,35 @@
 DMAMEM byte networkSerialReadBuffer[4096];
 DMAMEM byte networkSerialWriteBuffer[256];
 
+DMAMEM byte gnssSerialWriteBuffer[1024];
+
 MultiStream usbAndNetworkSerial = MultiStream(&Serial, &NETWORK_SERIAL);
 
-boolean enableSerial = false;
+boolean enableSerial = true;
+
+enum MessageType
+{
+    none,
+    rtcm,
+    json
+};
 
 char serialMessage[4096];
-int serialMessageLength = 0;
-bool serialMessageFinished = true;
-bool serialMessageIsNotRTCM = true;
+uint16_t serialMessageLength = 0;
+MessageType serialMessageType = none;
+uint16_t serialMessageRtcmLength = 0;
+uint8_t serialMessageBracketOpenCount = 0;
+uint8_t serialMessageBracketCloseCount = 0;
 
 char networkMessage[4096];
-int networkMessageLength = 0;
-bool networkMessageFinished = true;
-bool networkMessageIsNotRTCM = true;
+uint16_t networkMessageLength = 0;
+MessageType networkMessageType = none;
+uint16_t networkMessageRtcmLength = 0;
+uint8_t networkMessageBracketOpenCount = 0;
+uint8_t networkMessageBracketCloseCount = 0;
 
 char gnssMessage[128];
-int gnssMessageLength = 0;
+uint8_t gnssMessageLength = 0;
 bool gnssSerialFinished = true;
 
 void commsInit()
@@ -36,6 +49,8 @@ void commsInit()
     // Add larger buffer so we can receive chuncked RTCM messages
     NETWORK_SERIAL.addMemoryForRead(networkSerialReadBuffer, 4096);
     NETWORK_SERIAL.addMemoryForWrite(networkSerialWriteBuffer, 256);
+
+    GNSS_SERIAL.addMemoryForWrite(gnssSerialWriteBuffer, 1024);
 
     Serial.printf("Firmware date: %s\n", firmwareDate);
 
@@ -105,87 +120,136 @@ void receiveGNSSData()
     }
 }
 
-void receiveNetworkData()
+void handleIncomingData(
+    Stream *stream,
+    char *message,
+    uint16_t &messageLength,
+    MessageType &messageType,
+    uint16_t &messageRtcmLength,
+    uint8_t &messageBracketOpenCount,
+    uint8_t &messageBracketCloseCount)
 {
-    if (NETWORK_SERIAL.available())
+    if (stream->available())
     {
-        int byte = NETWORK_SERIAL.read();
-        // Pass through all messages to GNSS to ensure all
-        // RTCM messages gets through.
-        GNSS_SERIAL.write(byte);
-        networkMessageFinished = false;
-
-        if (byte == 0xD3)
+        int byte = stream->read();
+        // Look for message starting bytes.
+        if (messageType == none)
         {
-            networkMessageIsNotRTCM = false;
-        }
-        else if (char(byte) == '{')
-        {
-            networkMessageIsNotRTCM = true;
-        }
-
-        if (networkMessageIsNotRTCM)
-        {
-            // Serial.println(char(byte));
-            networkMessage[networkMessageLength] = byte;
-            networkMessageLength++;
-
-            if (char(byte) == '}')
+            // Look for first byte of RTCM.
+            if (byte == 0xD3)
             {
-                networkMessageFinished = true;
-                networkMessageIsNotRTCM = false;
+                // Serial.println("RTCM message found");
+                messageType = rtcm;
+                message[0] = byte;
+                messageLength = 1;
+                GNSS_SERIAL.write(byte);
+                return;
+            }
+            // Look for first byte of a JSON document.
+            else if (char(byte) == '{')
+            {
+                // Serial.println("JSON message found");
+                messageType = json;
+                message[0] = byte;
+                messageLength = 1;
+                messageBracketOpenCount = 1;
+                messageBracketCloseCount = 0;
+                return;
+            }
+            // Go to next byte to look for a new message start.
+            return;
+        }
+        // If we reach this point, a new message has been found,
+        // so we can start handling the rest of the message bytes.
 
-                DynamicJsonDocument document(networkMessageLength);
-                DeserializationError error = deserializeJson(document, networkMessage, networkMessageLength);
+        // Add byte to current message.
+        if (messageType != none)
+        {
+            message[messageLength] = byte;
+            messageLength++;
+        }
+
+        if (messageType == rtcm)
+        {
+            GNSS_SERIAL.write(byte);
+            // Get length from packet header
+            if (messageLength == 3)
+            {
+                messageRtcmLength = ((message[1] << 8) | message[2]);
+
+                // Serial.println(message[1], 2);
+                // Serial.print(message[1], 2);
+                // Serial.print(" + ");
+                // Serial.println(message[2], 2);
+                // Serial.printf("RTCM length: %4d\n", messageRtcmLength);
+            }
+            else if (messageLength == (3 + messageRtcmLength + 3))
+            {
+                // Serial.println("RTCM message end found.");
+                messageType = none;
+                messageRtcmLength = 0;
+                messageLength = 0;
+            }
+            else if (messageLength > (3 + messageRtcmLength + 3))
+            { // Serial.println("RTCM message end not found.");
+                messageType = none;
+                messageRtcmLength = 0;
+                messageLength = 0;
+            }
+        }
+        else if (messageType == json)
+        {
+            if (char(byte) == '{')
+            {
+                messageBracketOpenCount++;
+            }
+            else if (char(byte) == '}')
+            {
+                messageBracketCloseCount++;
+            }
+            if (messageBracketOpenCount == messageBracketCloseCount)
+            {
+                DynamicJsonDocument document(messageLength);
+                DeserializationError error = deserializeJson(document, message, messageLength);
                 if (document.size() > 0)
                 {
                     handleMotorControls(document);
                 }
-                networkMessageLength = 0;
+                // serializeJsonPretty(document, Serial);
+                messageLength = 0;
+                messageType = none;
             }
+        }
+        if (messageLength >= 4096)
+        {
+            Serial.println("Network message overloaded, clearing...");
+            messageLength = 0;
+            messageType = none;
         }
     }
 }
 
+// TODO: fix RTCM reception
+void receiveNetworkData()
+{
+    handleIncomingData(
+        &NETWORK_SERIAL,
+        networkMessage,
+        networkMessageLength,
+        networkMessageType,
+        networkMessageRtcmLength,
+        networkMessageBracketOpenCount,
+        networkMessageBracketCloseCount);
+}
+
 void receiveUSBSerialData()
 {
-    if (Serial.available())
-    {
-        int byte = Serial.read();
-        // Pass through all messages to GNSS to ensure all
-        // RTCM messages gets through.
-        GNSS_SERIAL.write(byte);
-
-        serialMessageFinished = false;
-
-        if (byte == 0xD3)
-        {
-            serialMessageIsNotRTCM = false;
-        }
-        else if (char(byte) == '{')
-        {
-            serialMessageIsNotRTCM = true;
-        }
-
-        if (serialMessageIsNotRTCM)
-        {
-            // Serial.println(char(byte));
-            serialMessage[serialMessageLength] = byte;
-            serialMessageLength++;
-
-            if (char(byte) == '}')
-            {
-                serialMessageFinished = true;
-                serialMessageIsNotRTCM = false;
-                // Serial.write(serialMessage, serialMessageLength);
-
-                DynamicJsonDocument document(serialMessageLength);
-                DeserializationError error = deserializeJson(document, serialMessage, serialMessageLength);
-
-                handleMotorControls(document);
-
-                serialMessageLength = 0;
-            }
-        }
-    }
+    handleIncomingData(
+        &Serial,
+        serialMessage,
+        serialMessageLength,
+        serialMessageType,
+        serialMessageRtcmLength,
+        serialMessageBracketOpenCount,
+        serialMessageBracketCloseCount);
 }

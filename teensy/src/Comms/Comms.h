@@ -12,17 +12,17 @@ extern DMAMEM byte networkSerialReadBuffer[4096];
 extern DMAMEM byte networkSerialWriteBuffer[256];
 
 extern char serialMessage[4096];
-extern int serialMessageLength;
+extern uint16_t serialMessageLength;
 extern bool serialMessageFinished;
-extern bool serialMessageIsNotRTCM;
+extern bool serialMessageIsRTCM;
 
 extern char networkMessage[4096];
-extern int networkMessageLength;
+extern uint16_t networkMessageLength;
 extern bool networkMessageFinished;
-extern bool networkMessageIsNotRTCM;
+extern bool networkMessageIsRTCM;
 
 extern char gnssMessage[128];
-extern int gnssMessageLength;
+extern uint8_t gnssMessageLength;
 extern bool gnssSerialFinished;
 
 void commsInit();
