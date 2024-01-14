@@ -27,6 +27,8 @@ extern bool gnssSerialFinished;
 
 void commsInit();
 
+void handlePriorityMessage();
+
 void sendToProgram(char *, int);
 
 void sendSensorData();

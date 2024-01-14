@@ -246,10 +246,12 @@ bool MotorConfig::save(FS *fs)
 void MotorConfig::printToStream(Stream *stream)
 {
     serializeJson(json(), *stream);
+    stream->println();
 }
 void MotorConfig::printToStreamPretty(Stream *stream)
 {
     serializeJsonPretty(json(), *stream);
+    stream->println();
 }
 
 String MotorConfig::getDescription(String key)

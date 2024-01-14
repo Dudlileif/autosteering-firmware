@@ -12,7 +12,7 @@ DMAMEM byte gnssSerialWriteBuffer[1024];
 
 MultiStream usbAndNetworkSerial = MultiStream(&Serial, &NETWORK_SERIAL);
 
-boolean enableSerial = true;
+boolean enableSerial = false;
 
 enum MessageType
 {
@@ -55,6 +55,70 @@ void commsInit()
     Serial.printf("Firmware date: %s\n", firmwareDate);
 
     Serial.println("Serial connections initialized.");
+}
+
+void handlePriorityMessage()
+{
+    NETWORK_SERIAL.clear();
+    if (!priorityMessageInProgress)
+    {
+        Serial.println("Priority message available, preparing...");
+    }
+    priorityMessageInProgress = true;
+    const char *message = NETWORK_SERIAL.readStringUntil('\n').c_str();
+    if (strlen(message) > 0)
+    {
+        Serial.println(message);
+        Serial.printf("Priority message: \n\t%s\n", message);
+        if (strstr(message, "FIRMWARE"))
+        {
+            Serial.println("Firmware update available, preparing...");
+            firmwareUpdateInProgress = true;
+            performUpdate();
+        }
+        else if (strstr(message, "MOTOR"))
+        {
+            Serial.println("Attempting to receive motor config...");
+            bool success = motorConfig.load(&NETWORK_SERIAL);
+            Serial.printf("Motor config reception %s.\n", success ? "completed" : "failed");
+            Serial.println("Motor config:");
+            motorConfig.printToStreamPretty(&Serial);
+            stepperInit();
+        }
+        else if (strstr(message, "VERSION"))
+        {
+            NETWORK_SERIAL.println("TEENSY VERSION");
+            Serial.println("Sending firmware version");
+            NETWORK_SERIAL.println(firmwareDate);
+        }
+        else if (strstr(message, "CRASH"))
+        {
+            NETWORK_SERIAL.print("CRASH REPORT");
+            NETWORK_SERIAL.println("");
+            NETWORK_SERIAL.print("CRASH REPORT");
+
+            if (CrashReport)
+            {
+                Serial.println("Crash report found, sending...");
+                NETWORK_SERIAL.print(CrashReport);
+                Serial.print(CrashReport);
+            }
+            else
+            {
+                Serial.println("No crash report found.");
+                NETWORK_SERIAL.print("No crash report.");
+            }
+            NETWORK_SERIAL.print('~');
+            NETWORK_SERIAL.println("");
+        }
+        else if (strstr(message, "REBOOT"))
+        {
+            Serial.println("Rebooting...");
+            SCB_AIRCR = 0x05FA0004;
+        }
+    }
+    Serial.println("Priority message over.");
+    priorityMessageInProgress = false;
 }
 
 void sendToProgram(char *message, int messageSize)
@@ -229,7 +293,6 @@ void handleIncomingData(
     }
 }
 
-// TODO: fix RTCM reception
 void receiveNetworkData()
 {
     handleIncomingData(

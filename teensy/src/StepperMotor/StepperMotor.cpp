@@ -30,6 +30,8 @@ const float t_acc = 0.015271; // pow(2, 41) / pow(f_clk, 2)
 TMC5160Stepper stepper = TMC5160Stepper(PIN_SPI_SS1, 0.075, PIN_SPI_MOSI1, PIN_SPI_MISO1, PIN_SPI_SCK1, -1);
 
 uint32_t motorStallTime = 0;
+int32_t motorStartPosition = 0;
+float calRotStartFraction = 0; // -1...1, position of starting point in the available range
 
 void stepperInit()
 {
@@ -52,11 +54,12 @@ void stepperInit()
     // 0..255 * 2^18*t_clk
     stepper.TPOWERDOWN(motorConfig.TPOWERDOWN);
 
+    // Ramp acceleration and speed config
     stepper.VSTART(motorConfig.VSTART);
     stepper.VSTOP(motorConfig.VSTOP);
     stepper.AMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
     stepper.DMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
-    stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM));
+    stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM / 2));
     stepper.a1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
     stepper.d1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
 
@@ -153,6 +156,13 @@ void restartStepper()
     Serial.println("Stepper restarted.");
 }
 
+void setCalRotFraction()
+{
+    int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
+
+    calRotStartFraction = constrain(2 * (stepperPositionActual - minPos) / float(2 * positionFromRotations(motorConfig.CAL_ROT)) - 1, -1, 1);
+}
+
 void handleMotorControls(DynamicJsonDocument &document)
 {
     JsonObject data = document.as<JsonObject>();
@@ -178,6 +188,7 @@ void handleMotorControls(DynamicJsonDocument &document)
     {
         if (!motorCalibration)
         {
+            restartStepper();
             motorEnabled = true;
         }
         motorCalibration = calibrate;
@@ -206,7 +217,7 @@ void updateStepper()
             stepperTargetRPM = 0;
             motorEnabled = false;
             Serial.println("Motor stopped, too long since last command.");
-
+            setCalRotFraction();
             char message[] = "{\"motor_no_command\": true}";
             sendToProgram(message, sizeof(message));
         }
@@ -230,18 +241,21 @@ void updateStepper()
                     Serial.println("Motor stalled.");
                     motorStallTime = now;
                     motorEnabled = false;
+                    setCalRotFraction();
                 }
                 else
                 {
-                    int32_t absTargetPosition = positionFromRotations(motorConfig.CAL_ROT);
-                    if (abs(stepperTargetPosition) != absTargetPosition)
+                    int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
+                    int32_t maxPos = motorStartPosition + (1 - calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
+                    if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
                     {
-                        stepperTargetPosition = absTargetPosition;
+                        stepperTargetPosition = minPos;
                     }
 
                     if (stepper.position_reached())
                     {
-                        stepperTargetPosition *= -1;
+
+                        stepperTargetPosition = stepperPositionActual > motorStartPosition ? minPos : maxPos;
                     }
 
                     stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
@@ -287,6 +301,7 @@ void updateStepper()
                 {
                     Serial.println("Motor stalled!");
                     motorEnabled = false;
+                    setCalRotFraction();
                     char message[26] = "{\"motor_stalled\": true}";
                     sendToProgram(message, sizeof(message));
                 }
