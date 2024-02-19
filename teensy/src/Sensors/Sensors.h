@@ -26,6 +26,6 @@ void wasInit();
 
 void updateImuReading();
 
-StaticJsonDocument<SENSOR_DATA_SIZE> getSensorData();
+JsonDocument getSensorData();
 
 #endif

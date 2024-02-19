@@ -59,7 +59,7 @@ float rpms2FromAcceleration(uint32_t acceleration);
 
 void restartStepper();
 
-void handleMotorControls(DynamicJsonDocument &document);
+void handleMotorControls(JsonDocument &document);
 
 void updateStepper();
 

@@ -247,7 +247,7 @@ public:
     };
     ~MotorConfig(){};
 
-    StaticJsonDocument<1024> json();
+    JsonDocument json();
     bool load(Stream *stream);
     bool loadFromFile(FS *fs);
     bool save(FS *fs);

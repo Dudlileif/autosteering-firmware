@@ -46,7 +46,7 @@ public:
     };
     ~WiFiConfig(){};
 
-    StaticJsonDocument<768> json();
+    JsonDocument json();
     bool load(FS *fs);
     bool save(FS *fs);
     void printToStream(Stream *stream);

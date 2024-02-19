@@ -7,6 +7,8 @@ MotorConfig motorConfig;
 
 String teensyCrashReport;
 
+unsigned long teensyUptimeMs = 0;
+
 unsigned long lastTeensyCommTime = 0;
 
 bool teensyUnresponsive = false;
@@ -62,7 +64,7 @@ bool getTeensyFirmwareVersion(bool debugPrint)
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     priorityMessageInProgress = false;
-
+    lastTeensyCommTime = micros();
     return messageReady;
 }
 
@@ -101,6 +103,49 @@ bool getTeensyCrashReport(bool debugPrint)
     else if (debugPrint)
     {
         Serial.println("Failed to get Teensy crash report.");
+    }
+    digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
+    priorityMessageInProgress = false;
+    lastTeensyCommTime = micros();
+    return messageReady;
+}
+
+bool getTeensyUptime(bool debugPrint)
+{
+    priorityMessageInProgress = true;
+
+    if (debugPrint)
+    {
+        Serial.println("Attempting to get Teensy uptime.");
+    }
+    digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
+    delay(100);
+    TEENSY_SERIAL.println("UPTIME");
+
+    uint32_t startTime = millis();
+    bool messageReady = false;
+    while (millis() - startTime < 1000 && !messageReady)
+    {
+        const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
+        if (strstr(message, "TEENSY UPTIME MS"))
+        {
+            messageReady = true;
+            break;
+        }
+    }
+    if (messageReady)
+    {
+        teensyUptimeMs = TEENSY_SERIAL.readStringUntil('\n').toInt();
+
+        if (debugPrint)
+        {
+            Serial.print("Teensy uptime ms:\n\t");
+            Serial.println(teensyUptimeMs);
+        }
+    }
+    else if (debugPrint)
+    {
+        Serial.println("Failed to get Teensy uptime.");
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     priorityMessageInProgress = false;

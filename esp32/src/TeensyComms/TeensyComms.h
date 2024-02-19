@@ -13,13 +13,17 @@ extern bool teensyUnresponsive;
 
 extern MotorConfig motorConfig;
 
+extern unsigned long teensyUptimeMs;
+
 extern unsigned long lastTeensyCommTime;
 
 void sendMotorConfig();
 
-bool getTeensyFirmwareVersion(bool);
+bool getTeensyFirmwareVersion(bool debugPrint);
 
 bool getTeensyCrashReport(bool debugPrint);
+
+bool getTeensyUptime(bool debugPrint);
 
 void rebootTeensy();
 

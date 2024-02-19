@@ -111,6 +111,12 @@ void handlePriorityMessage()
             NETWORK_SERIAL.print('~');
             NETWORK_SERIAL.println("");
         }
+        else if (strstr(message, "UPTIME"))
+        {
+            NETWORK_SERIAL.println("TEENSY UPTIME MS");
+            Serial.println("Sending uptime ms");
+            NETWORK_SERIAL.println(millis());
+        }
         else if (strstr(message, "REBOOT"))
         {
             Serial.println("Rebooting...");
@@ -138,7 +144,7 @@ void sendSensorData()
     uint32_t now = micros();
     if (now - SENSOR_PERIOD_US > sensorPrevUpdateTime)
     {
-        JsonVariantConst data = getSensorData();
+        JsonDocument data = getSensorData();
         int size = measureJson(data);
         if (size > 4)
         {
@@ -273,7 +279,7 @@ void handleIncomingData(
             }
             if (messageBracketOpenCount == messageBracketCloseCount)
             {
-                DynamicJsonDocument document(messageLength);
+                JsonDocument document;
                 DeserializationError error = deserializeJson(document, message, messageLength);
                 if (document.size() > 0)
                 {

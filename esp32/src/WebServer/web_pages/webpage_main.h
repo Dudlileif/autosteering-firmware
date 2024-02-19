@@ -73,9 +73,9 @@ const char main_html[] PROGMEM = R"rawliteral(
             </tr>
             <tr>
                 <td>
-                    <form action="/teensy">
+                    <form action="/status">
                         <button type="submit">
-                            <h3>Teensy status</h3>
+                            <h3>Hardware status</h3>
                         </button>
                     </form>
                     <br>

@@ -25,6 +25,12 @@ void setup()
   imuInit();
   wasInit();
   stepperInit();
+
+  if (CrashReport)
+  {
+    Serial.println("Crash report found, sending...");
+    Serial.print(CrashReport);
+  }
 }
 
 void loop()

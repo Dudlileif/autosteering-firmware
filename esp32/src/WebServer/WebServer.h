@@ -32,7 +32,9 @@ String humanReadableSize(const size_t bytes);
 
 String listFiles(bool ishtml);
 
-String teensyProcessor(const String &var);
+String uptimeMsToString(long uptimeMs);
+
+String statusProcessor(const String &var);
 
 String firmwareProcessor(const String &var);
 

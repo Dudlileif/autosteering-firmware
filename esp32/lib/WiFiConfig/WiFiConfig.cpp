@@ -8,7 +8,7 @@ bool WiFiConfig::load(FS *fs)
     if (configExists)
     {
         Serial.println("WiFi config found.");
-        StaticJsonDocument<1024> savedWifiConfig;
+        JsonDocument savedWifiConfig;
 
         File file = fs->open(WIFI_CONFIG_FILE);
 
@@ -137,9 +137,9 @@ bool WiFiConfig::load(FS *fs)
     return false;
 }
 
-StaticJsonDocument<768> WiFiConfig::json()
+JsonDocument WiFiConfig::json()
 {
-    StaticJsonDocument<768> jsonDocument;
+    JsonDocument jsonDocument;
 
     JsonArray ssids = jsonDocument.createNestedArray("ssid");
     JsonArray passwords = jsonDocument.createNestedArray("password");
@@ -167,7 +167,7 @@ StaticJsonDocument<768> WiFiConfig::json()
 
 bool WiFiConfig::save(FS *fs)
 {
-    StaticJsonDocument<768> jsonDocument;
+    JsonDocument jsonDocument;
 
     File file = fs->open(WIFI_CONFIG_FILE, FILE_WRITE);
     if (!file)

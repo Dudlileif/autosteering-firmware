@@ -1,4 +1,4 @@
-const char teensy_html[] PROGMEM = R"rawliteral(
+const char status_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>
 
@@ -34,13 +34,47 @@ const char teensy_html[] PROGMEM = R"rawliteral(
                 <h3>Menu</h3>
             </button>
         </form>
-        <h3>Teensy status</h3>
+        <h3>Hardware Status</h3>
+        <h4>Uptime</h4>
+        <table>
+            <tr>
+                <th>
+                    <h4>
+                        ESP32
+                    </h4>
+                </th>
+                <th>
+                    <h4> | </h4>
+                </th>
+                <th>
+                    <h4>
+                        Teensy
+                    </h4>
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    %ESP_UPTIME%
+                </td>
+                <td> | </td>
+                <td>
+                    %TEENSY_UPTIME%
+                </td>
+            </tr>
+        </table>
         <h4>Teensy crash report</h4>
         <p>
             %TEENSY_CRASH_REPORT%
         </p>
         <table>
             <tr>
+                <td>
+                    <form action="/refresh_teensy_uptime">
+                        <button type="submit">
+                            <h3>Refresh uptime</h3>
+                        </button>
+                    </form>
+                </td>
                 <td>
                     <form action="/refresh_teensy_crash_report">
                         <button type="submit">

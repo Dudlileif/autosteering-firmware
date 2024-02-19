@@ -6,7 +6,7 @@
 #include "Config/Config.h"
 #include "TeensyComms/TeensyComms.h"
 
-String firmwareDate = "2024-01-10";
+String firmwareDate = "2024-02-19";
 String teensyFirmwareDate;
 
 bool priorityMessageInProgress = false;
@@ -83,7 +83,7 @@ bool performUpdate(Stream &updateSource, size_t updateSize)
     if (Update.begin(updateSize))
     {
         Update.onProgress([](size_t prg, size_t sz)
-                          { Serial.printf("Progress: %d%%\n", int(100 * prg / sz)); });
+                          { Serial.printf("Progress: %d%%\r", int(100 * prg / sz)); });
         size_t written = Update.writeStream(updateSource);
         if (written == updateSize)
         {

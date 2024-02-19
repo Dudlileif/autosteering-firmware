@@ -115,9 +115,9 @@ void updateImuReading()
     currentImuReading.z_accel = (float)buffer_16[5] * MILLI_G_TO_MS2;
 }
 
-StaticJsonDocument<SENSOR_DATA_SIZE> getSensorData()
+JsonDocument getSensorData()
 {
-    StaticJsonDocument<SENSOR_DATA_SIZE> data;
+    JsonDocument data;
 
     if (abs(prevImuReading.yaw - currentImuReading.yaw) < 20 && abs(prevImuReading.pitch - currentImuReading.pitch) < 20 && abs(prevImuReading.roll - currentImuReading.roll) < 20)
     {

@@ -336,11 +336,10 @@ String motorProcessor(const String &var)
   if (var == "MOTOR_CONFIG_PLACEHOLDER")
   {
     String form;
-    motorConfig.json().as<JsonObject>();
-    for (JsonPair kv : motorConfig.json().as<JsonObject>())
+    JsonDocument document = motorConfig.json();
+    for (JsonPair kv : document.as<JsonObject>())
     {
       String key = String(kv.key().c_str());
-
       // Filter boolean parameters
       if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm")
       {
@@ -439,7 +438,34 @@ String motorProcessor(const String &var)
   return String();
 }
 
-String teensyProcessor(const String &var)
+String uptimeMsToString(long uptimeMs)
+{
+  uint32_t uptimeSeconds = uptimeMs / 1000;
+  uint8_t days = uptimeSeconds / (86400);
+  uint8_t hours = (uptimeSeconds - (days * 86400)) / 3600;
+  uint8_t minutes = floor((uptimeSeconds - (days * 86400) - (hours * 3600)) / 60);
+  uint8_t seconds = uptimeSeconds - days * 86400 - hours * 3600 - minutes * 60;
+  char buffer[100];
+  if (days > 0)
+  {
+    sprintf(buffer, "%d d %d h %d m %d s", days, hours, minutes, seconds);
+  }
+  else if (hours > 0)
+  {
+    sprintf(buffer, "%d h %d m %d s", hours, minutes, seconds);
+  }
+  else if (minutes > 0)
+  {
+    sprintf(buffer, "%d m %d s", minutes, seconds);
+  }
+  else
+  {
+    sprintf(buffer, "%d s", seconds);
+  }
+  return String(buffer);
+}
+
+String statusProcessor(const String &var)
 {
   if (var == "TEENSY_CRASH_REPORT")
   {
@@ -448,6 +474,14 @@ String teensyProcessor(const String &var)
       return String("No crash report found.");
     }
     return teensyCrashReport;
+  }
+  if (var == "ESP_UPTIME")
+  {
+    return uptimeMsToString(millis());
+  }
+  if (var == "TEENSY_UPTIME")
+  {
+    return uptimeMsToString(teensyUptimeMs);
   }
   return String();
 }
@@ -803,8 +837,10 @@ void startWebServer()
   webServer->on("/motor", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send_P(200, "text/html", motor_html, motorProcessor); });
 
-  webServer->on("/teensy", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send_P(200, "text/html", teensy_html, teensyProcessor); });
+  webServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
+                { 
+                  bool success = getTeensyUptime(true);
+                request->send_P(200, "text/html", status_html, statusProcessor); });
 
   webServer->on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->redirect("/"); 
@@ -817,7 +853,12 @@ void startWebServer()
   webServer->on("/refresh_teensy_crash_report", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 
                   bool success = getTeensyCrashReport(true);
-    request->redirect("/teensy"); });
+    request->redirect("/status"); });
+
+  webServer->on("/refresh_teensy_uptime", HTTP_GET, [](AsyncWebServerRequest *request)
+                { 
+                  bool success = getTeensyUptime(true);
+    request->redirect("/status"); });
 
   webServer->on("/refresh_teensy_version", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 

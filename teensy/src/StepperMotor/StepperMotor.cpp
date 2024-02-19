@@ -163,7 +163,7 @@ void setCalRotFraction()
     calRotStartFraction = constrain(2 * (stepperPositionActual - minPos) / float(2 * positionFromRotations(motorConfig.CAL_ROT)) - 1, -1, 1);
 }
 
-void handleMotorControls(DynamicJsonDocument &document)
+void handleMotorControls(JsonDocument &document)
 {
     JsonObject data = document.as<JsonObject>();
 

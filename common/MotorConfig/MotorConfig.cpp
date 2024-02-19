@@ -20,7 +20,7 @@ bool MotorConfig::load(Stream *stream)
     {
         return false;
     }
-    StaticJsonDocument<1024> savedConfig;
+    JsonDocument savedConfig;
 
     deserializeJson(savedConfig, *stream);
 
@@ -189,9 +189,9 @@ bool MotorConfig::loadFromFile(FS *fs)
     return false;
 }
 
-StaticJsonDocument<1024> MotorConfig::json()
+JsonDocument MotorConfig::json()
 {
-    StaticJsonDocument<1024> jsonDocument;
+    JsonDocument jsonDocument;
     jsonDocument["MICRO_STEPS"] = MICRO_STEPS;
     jsonDocument["STEPS_PER_ROT"] = STEPS_PER_ROT;
     jsonDocument["RMS_CURRENT"] = RMS_CURRENT;
