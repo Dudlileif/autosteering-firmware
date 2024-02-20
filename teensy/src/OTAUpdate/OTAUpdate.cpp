@@ -33,9 +33,9 @@ void performUpdate()
                                bufferAddr, bufferAddr + bufferSize);
 
     bool updateReady = false;
-    uint32_t waitStart = millis();
+    elapsedMillis waitingTime;
     usbAndNetworkSerial.println("Teensy waiting for update on serial");
-    while (!updateReady && millis() - waitStart < 2000)
+    while (!updateReady && waitingTime < 2000)
     {
         if (NETWORK_SERIAL.available())
         {

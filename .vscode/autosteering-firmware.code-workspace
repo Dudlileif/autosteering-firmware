@@ -15,7 +15,8 @@
 	],
 	"settings": {
 		"files.associations": {
-			"cmath": "cpp"
+			"cmath": "cpp",
+			"numbers": "cpp"
 		}
 	}
 }

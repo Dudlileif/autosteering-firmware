@@ -40,10 +40,8 @@ const char firmware_html[] PROGMEM = R"rawliteral(
         <h4>Installed versions</h4>
         ESP: %ESP_FIRMWARE_VERSION%
         <br>
-        Teensy: %TEENSY_FIRMWARE_DATE%
-        <form action="/refresh_teensy_version">
-            <input type="submit" value="Refresh Teensy version">
-        </form>
+        Teensy: <span id="teensy_version">%TEENSY_FIRMWARE_VERSION%</span>
+        <button onclick="getTeensyVersion()">Refresh Teensy version</button>
         </p>
         <p>Free Storage: <span id="free_stotrage">%FREE_STORAGE%</span> | Used Storage: <span
                 id="used_storage">%USED_STORAGE%</span> | Total Storage: <span id="total_storage">%TOTAL_STORAGE%</span>
@@ -158,6 +156,13 @@ const char firmware_html[] PROGMEM = R"rawliteral(
 
             function abortHandler(event) {
                 _("status").innerHTML = "inUpload Aborted";
+            }
+
+            function getTeensyVersion(){
+                xmlhttp = new XMLHttpRequest();
+                xmlhttp.open("GET", "/refresh_teensy_version", false);
+                xmlhttp.send();
+                document.getElementById("teensy_version").innerHTML = xmlhttp.responseText;
             }
 
         if (!!window.EventSource) {

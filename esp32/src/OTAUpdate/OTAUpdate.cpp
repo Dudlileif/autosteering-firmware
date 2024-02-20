@@ -172,18 +172,18 @@ bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
     priorityMessageInProgress = true;
     Serial.println("Notifying Teensy of incoming priority message.");
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
-    delay(50);
+    delay(100);
     TEENSY_SERIAL.println("FIRMWARE");
     uint32_t startTime = millis();
     bool teensyReady = false;
-    delay(100);
     uint32_t transfered = 0;
     uint32_t percent = 0;
 
     while (millis() - startTime < 1000 && !teensyReady)
     {
         const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
-        if (strstr(message, "READY"))
+        Serial.println(message);
+        if (strstr(message, "READY") || strstr(message, "waiting") || strstr(message, "update"))
         {
             teensyReady = true;
             break;

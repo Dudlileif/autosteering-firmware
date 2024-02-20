@@ -37,7 +37,7 @@ const char motor_html[] PROGMEM = R"rawliteral(
         <h3>Motor configuration</h3>
         <p>The parameters are labelled in the same way as the ones in the official documentation for the TMC5160.
             Parameters for most velocities, acceleration and thresholds have been converted to RPM to make them more
-            tangeable, these are noted with an _RPM suffix.
+            tangible, these are noted with an _RPM suffix.
             <a
                 href="https://www.analog.com/media/en/technical-documentation/data-sheets/TMC5160A_datasheet_rev1.18.pdf">
                 Link to TMC5160 documentation pdf</a>

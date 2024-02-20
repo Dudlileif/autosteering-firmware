@@ -283,7 +283,7 @@ String firmwareProcessor(const String &var)
   {
     return FIRMWARE_VERSION;
   }
-  if (var == "TEENSY_FIRMWARE_DATE")
+  if (var == "TEENSY_FIRMWARE_VERSION")
   {
     return teensyFirmwareVersion;
   }
@@ -865,27 +865,26 @@ void startWebServer()
                 request->send_P(200, "text/html", status_html, statusProcessor); });
 
   webServer->on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->redirect("/"); 
-                ESP.restart(); });
+                { ESP.restart(); });
 
   webServer->on("/reboot_teensy", HTTP_GET, [](AsyncWebServerRequest *request)
-                { rebootTeensy(); 
-                request->redirect("/"); });
+                { rebootTeensy(); });
 
   webServer->on("/refresh_teensy_crash_report", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 
                   bool success = getTeensyCrashReport(true);
-    request->redirect("/status"); });
+                    request->send(200,"text/plain",teensyCrashReport.c_str()); });
 
   webServer->on("/refresh_teensy_uptime", HTTP_GET, [](AsyncWebServerRequest *request)
-                { 
-                  bool success = getTeensyUptime(true);
-    request->redirect("/status"); });
+                { bool success = getTeensyUptime(true);
+                request->send(200,"text/plain",uptimeMsToString(teensyUptimeMs).c_str()); });
+
+  webServer->on("/refresh_esp_uptime", HTTP_GET, [](AsyncWebServerRequest *request)
+                { request->send(200, "text/plain", uptimeMsToString(millis()).c_str()); });
 
   webServer->on("/refresh_teensy_version", HTTP_GET, [](AsyncWebServerRequest *request)
-                { 
-                  bool success = getTeensyFirmwareVersion(true);
-    request->redirect("/firmware"); });
+                { bool success = getTeensyFirmwareVersion(true);
+                   request->send(200,"text/plain",teensyFirmwareVersion.c_str()); });
 
   webServer->on("/update_network_config", HTTP_GET, onUpdateNetworkConfig);
 
