@@ -42,6 +42,9 @@
 #define DEFAULT_DC_SG 5
 
 #define DEFAULT_CAL_ROT 2.0
+#define WAS_MIN -1
+#define WAS_CENTER -1
+#define WAS_MAX -1
 
 class MotorConfig
 {
@@ -209,6 +212,15 @@ public:
     // Enable automatic tuning of PWM_GRAD
     bool pwm_autograd;
 
+    // Minium reading value for the WAS (usually full left turn).
+    int16_t was_min;
+
+    // Minium reading value for the WAS (wheels pointing straight).
+    int16_t was_center;
+
+    // Maximum reading value for the WAS (usually full right turn).
+    int16_t was_max;
+
     MotorConfig()
     {
         AMAX_RPM_S_2 = DEFUALT_AMAX_RPM_S_2;
@@ -244,6 +256,9 @@ public:
         DC_TIME = DEFAULT_DC_TIME;
         DC_SG = DEFAULT_DC_SG;
         CAL_ROT = DEFAULT_CAL_ROT;
+        was_min = WAS_MIN;
+        was_center = WAS_CENTER;
+        was_max = WAS_MAX;
     };
     ~MotorConfig(){};
 

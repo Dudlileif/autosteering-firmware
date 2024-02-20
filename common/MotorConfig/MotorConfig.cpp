@@ -167,6 +167,18 @@ bool MotorConfig::load(Stream *stream)
     {
         CAL_ROT = savedConfig["CAL_ROT"];
     }
+    if (savedConfig.containsKey("was_min"))
+    {
+        was_min = savedConfig["was_min"];
+    }
+    if (savedConfig.containsKey("was_center"))
+    {
+        was_center = savedConfig["was_center"];
+    }
+    if (savedConfig.containsKey("was_max"))
+    {
+        was_max = savedConfig["was_max"];
+    }
 
     Serial.println("Teensy config loaded successfully.");
 
@@ -226,6 +238,9 @@ JsonDocument MotorConfig::json()
     jsonDocument["TBL"] = TBL;
     jsonDocument["TPOWERDOWN"] = TPOWERDOWN;
     jsonDocument["TZEROWAIT"] = TZEROWAIT;
+    jsonDocument["was_min"] = was_min;
+    jsonDocument["was_center"] = was_center;
+    jsonDocument["was_max"] = was_max;
 
     return jsonDocument;
 }
@@ -388,6 +403,18 @@ String MotorConfig::getDescription(String key)
     else if (key == "AMAX_RPM_S_2")
     {
         return "The maximum acceleration rate, in RPM/s^2.";
+    }
+    else if (key == "was_min")
+    {
+        return "Minimum reading value for the WAS (usually full right turn).";
+    }
+    else if (key == "was_center")
+    {
+        return "Center reading value for the WAS (wheels pointing straight).";
+    }
+    else if (key == "was_max")
+    {
+        return "Maximum reading value for the WAS (usually full right turn).";
     }
 
     return "Description missing.";
