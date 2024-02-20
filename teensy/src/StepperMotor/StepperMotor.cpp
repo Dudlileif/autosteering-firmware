@@ -2,6 +2,7 @@
 
 #include "Config/Config.h"
 #include "Comms/Comms.h"
+#include "Sensors/Sensors.h"
 
 MotorConfig motorConfig;
 
@@ -20,6 +21,13 @@ uint8_t stepperCurrentScale = 0;
 
 unsigned long stepperPrevUpdateTime = 0;
 unsigned long stepperPrevCommandTime = 0;
+
+float stepsPerWASIncrementMinToCenter = -1;
+float stepsPerWASIncrementCenterToMax = -1;
+bool wasCalibrationCentered = false;
+int16_t wasCalibrationStart = -1;
+int8_t calibrationDirectionFix = 1;
+elapsedMillis sinceCalibrationDirectionFixChange;
 
 const uint32_t f_clk = 12000000;
 
@@ -204,6 +212,78 @@ void handleMotorControls(JsonDocument &document)
     stepperPrevCommandTime = micros();
 }
 
+void calibrateStepsPerWASIncrement()
+{
+    if (motorCalibration && motorEnabled && wasReading > 0)
+    {
+        if (!wasCalibrationCentered && wasCalibrationStart < 0)
+        {
+            wasCalibrationStart = wasReading;
+        }
+        if (!wasCalibrationCentered && wasReading < motorConfig.was_center - 100)
+        {
+            if (wasReading < wasCalibrationStart - 10 && sinceCalibrationDirectionFixChange > 1000)
+            {
+                calibrationDirectionFix *= -1;
+                sinceCalibrationDirectionFixChange = 0;
+            }
+            stepper.VMAX(velocityFromRPM(20));
+            stepper.RAMPMODE(positioning);
+            stepper.XTARGET(stepperPositionActual - calibrationDirectionFix * int(0.1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS));
+        }
+        else if (!wasCalibrationCentered && wasReading > motorConfig.was_center - 100)
+        {
+            if (wasReading > wasCalibrationStart + 10 && sinceCalibrationDirectionFixChange > 1000)
+            {
+                calibrationDirectionFix *= -1;
+                sinceCalibrationDirectionFixChange = 0;
+            }
+            stepper.VMAX(velocityFromRPM(20));
+            stepper.RAMPMODE(positioning);
+            stepper.XTARGET(stepperPositionActual + calibrationDirectionFix * int(0.1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS));
+        }
+
+        else if (!wasCalibrationCentered && wasReading > motorConfig.was_center - 100 && wasReading < motorConfig.was_center + 100)
+        {
+            wasCalibrationCentered = true;
+            wasCalibrationStart = -1;
+        }
+        if (stepsPerWASIncrementMinToCenter < 0 && wasCalibrationCentered)
+        {
+            if (wasCalibrationStart < 0 && stepper.position_reached())
+            {
+                wasCalibrationStart = wasReading;
+                stepper.VMAX(velocityFromRPM(40));
+                stepper.RAMPMODE(positioning);
+                stepper.XTARGET(stepperPositionActual + calibrationDirectionFix * 1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
+            }
+            else if (wasCalibrationStart > 0 && stepper.position_reached())
+            {
+                stepsPerWASIncrementMinToCenter = sqrt(pow(wasReading - wasCalibrationStart, 2)) / (1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
+                wasCalibrationStart = -1;
+                wasCalibrationCentered = false;
+            }
+        }
+        else if (stepsPerWASIncrementCenterToMax < 0 && wasCalibrationCentered)
+        {
+
+            if (wasCalibrationStart < 0 && stepper.position_reached())
+            {
+                wasCalibrationStart = wasReading;
+                stepper.VMAX(velocityFromRPM(40));
+                stepper.RAMPMODE(positioning);
+                stepper.XTARGET(stepperPositionActual - calibrationDirectionFix * 1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
+            }
+            else if (wasCalibrationStart > 0 && stepper.position_reached())
+            {
+                stepsPerWASIncrementCenterToMax = sqrt(pow(wasReading - wasCalibrationStart, 2)) / (1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
+                wasCalibrationStart = -1;
+                wasCalibrationCentered = false;
+            }
+        }
+    }
+}
+
 void updateStepper()
 {
     digitalWrite(MOTOR_ENABLE_PIN, !motorEnabled);
@@ -234,8 +314,10 @@ void updateStepper()
         stepperPositionActual = stepper.XACTUAL();
         if (motorCalibration)
         {
+
             if (motorEnabled)
             {
+
                 if (stepper.stallguard())
                 {
                     Serial.println("Motor stalled.");
@@ -245,22 +327,52 @@ void updateStepper()
                 }
                 else
                 {
-                    int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
-                    int32_t maxPos = motorStartPosition + (1 - calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
-                    if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
+                    if (stepsPerWASIncrementMinToCenter > 0 && stepsPerWASIncrementCenterToMax > 0)
                     {
-                        stepperTargetPosition = minPos;
-                    }
+                        // Negative
+                        int32_t centerToMin = (motorConfig.was_min - motorConfig.was_center) * stepsPerWASIncrementMinToCenter;
+                        // Positive
+                        int32_t centerToMax = (motorConfig.was_max - motorConfig.was_center) * stepsPerWASIncrementCenterToMax;
+                        // Positive < was_center < Negative
+                        int32_t readingToCenter = wasReading < motorConfig.was_center ? (motorConfig.was_center - wasReading) * stepsPerWASIncrementMinToCenter : (motorConfig.was_center - wasReading) * stepsPerWASIncrementCenterToMax;
 
-                    if (stepper.position_reached())
+                        int32_t minPos = stepperPositionActual + readingToCenter + centerToMin;
+                        int32_t maxPos = stepperPositionActual + readingToCenter + centerToMax;
+                        if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
+                        {
+                            stepperTargetPosition = minPos;
+                        }
+
+                        if (stepper.position_reached())
+                        {
+                            // Next target is the one furthest away.
+                            stepperTargetPosition = pow(stepperPositionActual - minPos, 2) > pow(stepperPositionActual - maxPos, 2) ? minPos : maxPos;
+                        }
+
+                        stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
+                        stepper.RAMPMODE(positioning);
+                        stepper.XTARGET(stepperTargetPosition);
+                    }
+                    else
                     {
-
-                        stepperTargetPosition = stepperPositionActual > motorStartPosition ? minPos : maxPos;
+                        calibrateStepsPerWASIncrement();
                     }
+                    // int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
+                    // int32_t maxPos = motorStartPosition + (1 - calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
+                    // if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
+                    // {
+                    //     stepperTargetPosition = minPos;
+                    // }
 
-                    stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
-                    stepper.RAMPMODE(positioning);
-                    stepper.XTARGET(stepperTargetPosition);
+                    // if (stepper.position_reached())
+                    // {
+
+                    //     stepperTargetPosition = stepperPositionActual > motorStartPosition ? minPos : maxPos;
+                    // }
+
+                    // stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
+                    // stepper.RAMPMODE(positioning);
+                    // stepper.XTARGET(stepperTargetPosition);
 
                     // Serial.printf(
                     //     "TOFF: %2d, Pos: %12d, Target: %12d, Vel: %12d, RPM: %5.1f, TSTEP: %7d, CS: %2d, GSTAT: %d%d%d, SG: %4d, FS: %1d\n",
