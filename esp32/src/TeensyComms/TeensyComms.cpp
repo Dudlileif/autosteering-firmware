@@ -51,11 +51,11 @@ bool getTeensyFirmwareVersion(bool debugPrint)
     }
     if (messageReady)
     {
-        teensyFirmwareDate = TEENSY_SERIAL.readStringUntil('\n');
+        teensyFirmwareVersion = TEENSY_SERIAL.readStringUntil('\n');
         if (debugPrint)
         {
             Serial.print("Teensy firwmare date:\n\t");
-            Serial.println(teensyFirmwareDate);
+            Serial.println(teensyFirmwareVersion);
         }
     }
     else if (debugPrint)

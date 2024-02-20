@@ -9,6 +9,8 @@
 
 AsyncWebServer *webServer;
 
+AsyncEventSource *events;
+
 bool uploadingFile = false;
 
 String networkForm(uint16_t i, String initialSSID, String initialPassword)
@@ -277,13 +279,13 @@ String firmwareProcessor(const String &var)
   {
     return humanReadableSize(LittleFS.totalBytes());
   }
-  if (var == "ESP_FIRMWARE_DATE")
+  if (var == "ESP_FIRMWARE_VERSION")
   {
-    return firmwareDate;
+    return FIRMWARE_VERSION;
   }
   if (var == "TEENSY_FIRMWARE_DATE")
   {
-    return teensyFirmwareDate;
+    return teensyFirmwareVersion;
   }
   return String();
 }
@@ -380,6 +382,10 @@ String motorProcessor(const String &var)
       else if (key == "RMS_CURRENT")
       {
         form += numberForm(key, key, key, 0, 3000, uint16_t(kv.value()), motorConfig.getDescription(key));
+      }
+      else if (key == "was_min" || key == "was_center" || key == "was_max")
+      {
+        form += numberForm(key, key, key, 0, pow(2, 15) - 1, int16_t(kv.value()), motorConfig.getDescription(key));
       }
       else if (key == "TZEROWAIT")
       {
@@ -776,6 +782,18 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request)
   {
     motorConfig.CAL_ROT = constrain(request->getParam("CAL_ROT")->value().toFloat(), 0.0, 100);
   }
+  if (request->hasParam("was_min"))
+  {
+    motorConfig.was_min = constrain(request->getParam("was_min")->value().toInt(), 0, pow(2, 15) - 1);
+  }
+  if (request->hasParam("was_center"))
+  {
+    motorConfig.was_center = constrain(request->getParam("was_center")->value().toInt(), 0, pow(2, 15) - 1);
+  }
+  if (request->hasParam("was_max"))
+  {
+    motorConfig.was_max = constrain(request->getParam("was_max")->value().toInt(), 0, pow(2, 15) - 1);
+  }
 
   if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)
   {
@@ -824,6 +842,10 @@ void startWebServer()
 {
 
   webServer = new AsyncWebServer(wifiConfig.apServerPort);
+
+  events = new AsyncEventSource("/events");
+
+  webServer->addHandler(events);
 
   webServer->on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send_P(200, "text/html", main_html, mainProcessor); });
@@ -878,6 +900,13 @@ void startWebServer()
 
   webServer->onNotFound([](AsyncWebServerRequest *request)
                         { request->send(404, "text/plain", "Not found"); });
+
+  events->onConnect([](AsyncEventSourceClient *client)
+                    {  
+                      if(client->lastId()){
+    Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+  }
+  client->send("hello!", NULL, millis(), 1000); });
 
   webServer->begin();
 }

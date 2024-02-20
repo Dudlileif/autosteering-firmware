@@ -4,10 +4,10 @@
 #include <LittleFS.h>
 
 #include "Config/Config.h"
+#include "WebServer/WebServer.h"
 #include "TeensyComms/TeensyComms.h"
 
-String firmwareDate = "2024-02-19";
-String teensyFirmwareDate;
+String teensyFirmwareVersion;
 
 bool priorityMessageInProgress = false;
 
@@ -59,17 +59,20 @@ void attemptToUpdate()
             if (gotVersion)
             {
                 Serial.print("Teensy updated to version:\n\t");
-                Serial.println(teensyFirmwareDate);
+                Serial.println(teensyFirmwareVersion);
+                events->send("Teensy updated successfully.", "progress", millis());
                 sendMotorConfig();
             }
             else
             {
                 Serial.println("Failed to find Teensy version.");
+                events->send("Failed to find Teensy version.", "progress", millis());
             }
         }
         else
         {
             Serial.println("Teensy was NOT updated");
+            events->send("Teensy was NOT updated.", "progress", millis());
         }
     }
     priorityMessageInProgress = false;
@@ -83,7 +86,12 @@ bool performUpdate(Stream &updateSource, size_t updateSize)
     if (Update.begin(updateSize))
     {
         Update.onProgress([](size_t prg, size_t sz)
-                          { Serial.printf("Progress: %d%%\r", int(100 * prg / sz)); });
+                          {
+                              uint8_t percent = int(100 * prg / sz);
+                              char buffer[40];
+                              sprintf(buffer, "ESP update progress: %d%%", percent);
+                              Serial.printf("%s\r", String(buffer).c_str());
+                              events->send(String(buffer).c_str(), "progress", millis()); });
         size_t written = Update.writeStream(updateSource);
         if (written == updateSize)
         {
@@ -99,21 +107,27 @@ bool performUpdate(Stream &updateSource, size_t updateSize)
             if (Update.isFinished())
             {
                 Serial.println("Update installed successfully, rebooting...");
+                events->send("ESP update installed successfully, rebooting...", "progress", millis());
                 return true;
             }
             else
             {
                 Serial.println("Update failed.");
+                events->send("ESP update failed", "progress", millis());
             }
         }
         else
         {
-            Serial.printf("Error occured during install: %s\n", Update.errorString());
+            char buffer[100];
+            sprintf(buffer, "ESP update error occured during install:\n%s", Update.errorString());
+            Serial.print(buffer);
+            events->send(String(buffer).c_str(), "progress", millis());
         }
     }
     else
     {
         Serial.println("Not enough space to perform update.");
+        events->send("ESP update not enough space to perform update.", "progress", millis());
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
 
@@ -136,6 +150,7 @@ bool attemptToUpdateSelf(const String &fileName)
         else
         {
             Serial.println("Empty file, update aborted.");
+            events->send("ESP update empty file, update aborted.", "progress", millis());
         }
         updateFile.close();
         LittleFS.remove(fileName);
@@ -144,7 +159,10 @@ bool attemptToUpdateSelf(const String &fileName)
     }
     else
     {
-        Serial.printf("Update file not found: %s\n", fileName);
+        // char buffer[100];
+        // sprintf(buffer, "ESP update file not found: %s\n", fileName.c_str());
+        // Serial.println(buffer);
+        // events->send(String(buffer).c_str(), "progress", millis());
     }
     return false;
 }
@@ -156,30 +174,55 @@ bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
     delay(50);
     TEENSY_SERIAL.println("FIRMWARE");
+    uint32_t startTime = millis();
+    bool teensyReady = false;
     delay(100);
     uint32_t transfered = 0;
     uint32_t percent = 0;
-    if (!updateSource.available())
+
+    while (millis() - startTime < 1000 && !teensyReady)
     {
-        return false;
-    }
-    while (updateSource.available())
-    {
-        TEENSY_SERIAL.write(updateSource.read());
-        if (int(100 * transfered / updateSize) > percent)
+        const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
+        if (strstr(message, "READY"))
         {
-            Serial.printf("Transfering firmware... %d%%\n", percent);
-            percent = int(100 * transfered / updateSize);
-        }
-        transfered++;
-        delayMicroseconds(20);
-        if (TEENSY_SERIAL.available())
-        {
-            String teensyString = TEENSY_SERIAL.readString();
-            Serial.printf("Teensy status: %s\n", teensyString);
+            teensyReady = true;
+            break;
         }
     }
-    return true;
+    if (teensyReady)
+    {
+
+        if (!updateSource.available())
+        {
+            return false;
+        }
+        while (updateSource.available())
+        {
+            TEENSY_SERIAL.write(updateSource.read());
+            if (int(100 * transfered / updateSize) > percent)
+            {
+                percent = int(100 * transfered / updateSize);
+                char buffer[40];
+                sprintf(buffer, "Teensy update progress: %d%%", percent);
+                Serial.printf("%s\r", String(buffer).c_str());
+                events->send(String(buffer).c_str(), "progress", millis());
+            }
+            transfered++;
+            delayMicroseconds(20);
+            if (TEENSY_SERIAL.available())
+            {
+                String teensyString = TEENSY_SERIAL.readString();
+                Serial.printf("Teensy status: %s\n", teensyString.c_str());
+            }
+        }
+        return true;
+    }
+
+    const char message[] = "Teensy not found or ready.";
+    Serial.println(message);
+    events->send(message, "progress", millis());
+
+    return false;
 }
 
 bool attemptToUpdateTeensy(const String &fileName)
@@ -191,25 +234,32 @@ bool attemptToUpdateTeensy(const String &fileName)
         bool updated = false;
         if (updateSize > 0)
         {
-            Serial.println("Attempting to update Teensy...");
+            Serial.println("Attempting to update Teensy ...");
+            events->send("Attempting to update Teensy ...", "progress", millis());
 
             updated = performTeensyUpdate(updateFile, updateSize);
         }
         else
         {
             Serial.println("Empty file, update aborted.");
+            events->send("Teensy update empty file, update aborted.", "progress", millis());
         }
         updateFile.close();
         if (updated)
         {
             LittleFS.remove(fileName);
             Serial.println("Teensy firmware update sent.");
+            events->send("Teensy update sent.", "progress", millis());
         }
         return updated;
     }
     else
     {
-        Serial.printf("Update file not found: %s\n", fileName);
+        // Serial.printf("Teensy update file not found: %s\n", fileName.c_str());
+        // char buffer[200];
+        // sprintf(buffer, "Teensy update file not found: %s\n", fileName.c_str());
+        // Serial.println(buffer);
+        // events->send(String(buffer).c_str(), "progress", millis());
     }
     return false;
 }

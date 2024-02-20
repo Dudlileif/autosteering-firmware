@@ -5,6 +5,8 @@
 
 extern AsyncWebServer *webServer;
 
+extern AsyncEventSource *events;
+
 extern bool uploadingFile;
 
 void onFile(AsyncWebServerRequest *request);

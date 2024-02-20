@@ -5,8 +5,7 @@
 
 #define FORMAT_LITTLEFS_IF_FAILED true
 
-extern String firmwareDate;
-extern String teensyFirmwareDate;
+extern String teensyFirmwareVersion;
 
 extern bool priorityMessageInProgress;
 

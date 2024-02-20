@@ -52,7 +52,7 @@ void commsInit()
 
     GNSS_SERIAL.addMemoryForWrite(gnssSerialWriteBuffer, 1024);
 
-    Serial.printf("Firmware date: %s\n", firmwareDate);
+    Serial.printf("Firmware date: %s\n", FIRMWARE_VERSION);
 
     Serial.println("Serial connections initialized.");
 }
@@ -72,6 +72,7 @@ void handlePriorityMessage()
         Serial.printf("Priority message: \n\t%s\n", message);
         if (strstr(message, "FIRMWARE"))
         {
+            NETWORK_SERIAL.println("READY");
             Serial.println("Firmware update available, preparing...");
             firmwareUpdateInProgress = true;
             performUpdate();
@@ -89,7 +90,7 @@ void handlePriorityMessage()
         {
             NETWORK_SERIAL.println("TEENSY VERSION");
             Serial.println("Sending firmware version");
-            NETWORK_SERIAL.println(firmwareDate);
+            NETWORK_SERIAL.println(FIRMWARE_VERSION);
         }
         else if (strstr(message, "CRASH"))
         {

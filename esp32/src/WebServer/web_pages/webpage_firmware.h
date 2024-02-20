@@ -38,7 +38,7 @@ const char firmware_html[] PROGMEM = R"rawliteral(
         <h3>Update firmware</h3>
         <p>
         <h4>Installed versions</h4>
-        ESP: %ESP_FIRMWARE_DATE%
+        ESP: %ESP_FIRMWARE_VERSION%
         <br>
         Teensy: %TEENSY_FIRMWARE_DATE%
         <form action="/refresh_teensy_version">
@@ -158,6 +158,29 @@ const char firmware_html[] PROGMEM = R"rawliteral(
 
             function abortHandler(event) {
                 _("status").innerHTML = "inUpload Aborted";
+            }
+
+        if (!!window.EventSource) {
+                var source = new EventSource('/events');
+
+                source.addEventListener('open', function (e) {
+                    console.log("Events Connected");
+                }, false);
+
+                source.addEventListener('error', function (e) {
+                    if (e.target.readyState != EventSource.OPEN) {
+                        console.log("Events Disconnected");
+                    }
+                }, false);
+
+                source.addEventListener('message', function (e) {
+                    console.log("message", e.data);
+                }, false);
+
+                source.addEventListener('progress', function (e) {
+                    console.log("progress", e.data);
+                    document.getElementById("status").innerHTML = e.data;
+                }, false);
             }
 
         </script>

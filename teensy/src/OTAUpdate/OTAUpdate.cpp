@@ -12,8 +12,6 @@ extern "C"
 #include "Config/Config.h"
 #include "Comms/Comms.h"
 
-const char *firmwareDate = "2024-02-19";
-
 bool priorityMessageInProgress = false;
 bool firmwareUpdateInProgress = false;
 

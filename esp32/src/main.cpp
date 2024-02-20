@@ -25,7 +25,7 @@ void setup()
   digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
 
   Serial.begin(SERIAL_BAUD);
-  Serial.printf("ESP32 Firmware date: %s\n", firmwareDate);
+  Serial.printf("ESP32 Firmware date: %s\n", FIRMWARE_VERSION);
 
   TEENSY_SERIAL.setRxBufferSize(256);
   TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);

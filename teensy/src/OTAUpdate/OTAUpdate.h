@@ -3,8 +3,6 @@
 
 #define FLASH_ID "fw_teensy41"
 
-extern const char *firmwareDate;
-
 extern bool priorityMessageInProgress;
 extern bool firmwareUpdateInProgress;
 

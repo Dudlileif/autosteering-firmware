@@ -141,8 +141,8 @@ JsonDocument WiFiConfig::json()
 {
     JsonDocument jsonDocument;
 
-    JsonArray ssids = jsonDocument.createNestedArray("ssid");
-    JsonArray passwords = jsonDocument.createNestedArray("password");
+    JsonArray ssids = jsonDocument["ssid"].to<JsonArray>();
+    JsonArray passwords = jsonDocument["password"].to<JsonArray>();
 
     for (int i = 0; i < 5; i++)
     {
