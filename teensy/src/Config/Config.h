@@ -32,4 +32,6 @@ const int PIN_SPI_MOSI1 = 26;
 const int PIN_SPI_SCK1 = 27;
 const int PIN_SPI_SS1 = 38;
 
+const int PIN_WAS = 41;
+
 #endif

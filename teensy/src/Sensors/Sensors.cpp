@@ -1,3 +1,5 @@
+#include <ADC.h>
+#include <ADC_util.h>
 #include "Sensors.h"
 #include "StepperMotor/StepperMotor.h"
 
@@ -5,14 +7,14 @@ unsigned long sensorPrevUpdateTime = 0;
 
 Adafruit_BNO08x_RVC imuRVC;
 
-Adafruit_ADS1115 ads1115;
-
 unsigned long imuPrevUpdateTime = 0;
 
 BNO08x_RVC_Data currentImuReading;
 BNO08x_RVC_Data prevImuReading;
 
-int16_t wasReading = 0;
+uint16_t wasReading = 0;
+
+ADC *adc = new ADC();
 
 // Rounds a number to a certain number of decimals.
 double roundToNumberOfDecimals(double value, int numDecimals)
@@ -36,10 +38,11 @@ void imuInit()
 
 void wasInit()
 {
-    ads1115.begin(ADS1X15_ADDRESS, &Wire1);
-    ads1115.setGain(GAIN_ONE);
-    ads1115.setDataRate(RATE_ADS1115_860SPS);
-    ads1115.startADCReading(ADS1X15_REG_CONFIG_MUX_SINGLE_0, false);
+    adc->adc0->setAveraging(16);
+    adc->adc0->setResolution(16);
+    adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED);
+    adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED);
+    adc->adc0->startContinuous(PIN_WAS);
 
     Serial.println("WAS initialized.");
 }
@@ -126,11 +129,10 @@ JsonDocument getSensorData()
         data["roll"] = roundToNumberOfDecimals(currentImuReading.roll, 3);
     }
 
-    if (ads1115.conversionComplete())
+    if (adc->adc0->isComplete())
     {
-        wasReading = ads1115.getLastConversionResults();
+        wasReading = (uint16_t)adc->analogReadContinuous();
         data["was"] = wasReading;
-        ads1115.startADCReading(ADS1X15_REG_CONFIG_MUX_SINGLE_0, false);
     }
 
     data["motor_enabled"] = motorEnabled;

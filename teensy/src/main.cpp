@@ -18,6 +18,7 @@
 void setup()
 {
   pinMode(PRIORITY_MESSAGE_SIGNAL_PIN, INPUT);
+  pinMode(PIN_WAS, INPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
 
