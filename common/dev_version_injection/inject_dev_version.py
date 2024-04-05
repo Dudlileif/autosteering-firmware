@@ -37,5 +37,10 @@ if dev_build:
         "_dev.{}".format(dev_version) if dev_build else "",
     )
     env.GetProjectConfig().set("common", "version_string", version)
+    print("Dev version:", version)
 
 env.GetProjectConfig().set("common", "build_timestamp", str(datetime.datetime.now()))
+
+check_sum_path: str = os.path.join(env["PROJECT_DIR"], ".pio/build/project.checksum")
+if os.path.exists(check_sum_path):
+    os.remove(check_sum_path)

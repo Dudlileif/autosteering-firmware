@@ -19,7 +19,6 @@ import os
 
 Import("env")
 
-
 def increase_dev_version(source, target, env) -> None:
     version_file_path: str = "dev_version"
     dev_version = 1
@@ -30,6 +29,5 @@ def increase_dev_version(source, target, env) -> None:
     with open(version_file_path, "w", encoding="utf-8") as version_file:
         version_file.write(str(dev_version))
 
-
-if env.GetProjectConfig().get("common", "dev_build"):
-    env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", increase_dev_version)
+if env.GetProjectConfig().getboolean("common", "dev_build"):
+    env.AddPostAction("$BUILD_DIR/${PROGNAME}.elf", increase_dev_version)
