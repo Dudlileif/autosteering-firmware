@@ -15,31 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef SENSORS_H
-#define SENSORS_H
+#ifndef OTAUPDATE_H
+#define OTAUPDATE_H
 
-#include <ArduinoJson.h>
+#include <Arduino.h>
 
-#include "Config/Config.h"
-#include "Adafruit_BNO08x_RVC.h"
+#define FORMAT_LITTLEFS_IF_FAILED true
 
-extern elapsedMicros sensorPrevUpdateElapsedTime;
+extern String teensyFirmwareVersion;
 
-extern Adafruit_BNO08x_RVC imuRVC;
+extern bool priorityMessageInProgress;
 
-extern BNO08x_RVC_Data currentImuReading;
-extern BNO08x_RVC_Data prevImuReading;
+extern bool doUpdate;
 
-extern uint16_t wasReading;
+extern String updateFileName;
+void mountFileSystem();
 
-double roundToNumberOfDecimals(double, int);
+void attemptToUpdate();
 
-void imuInit();
+bool attemptToUpdateSelf(const String &);
 
-void wasInit();
+bool performUpdate(Stream &updateSource, size_t updateSize);
 
-void updateImuReading();
+#ifndef BASE_STATION
 
-JsonDocument getSensorData();
+bool attemptToUpdateTeensy(const String &);
+
+bool performTeensyUpdate(Stream &updateSource, size_t updateSize);
+#endif
 
 #endif

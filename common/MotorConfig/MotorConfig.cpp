@@ -1,3 +1,20 @@
+// Copyright (C) 2024 Gaute Hagen
+//
+// This file is part of Autosteering Firmware.
+//
+// Autosteering Firmware is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Autosteering Firmware is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+
 #include "MotorConfig.h"
 #include <ArduinoJson.h>
 
@@ -6,12 +23,12 @@ bool MotorConfig::load(Stream *stream)
 
     bool configReady = false;
     uint32_t waitStart = millis();
-    Serial.println("Teensy waiting for update on serial");
+    Serial.println("Waiting for motor config...");
     while (!configReady && millis() - waitStart < 2000)
     {
         if (stream->available())
         {
-            Serial.println("Teensy found config on serial");
+            Serial.println("Found motor config...");
             configReady = true;
             break;
         }
@@ -28,8 +45,12 @@ bool MotorConfig::load(Stream *stream)
 
     if (savedConfig.isNull())
     {
-        Serial.println("Teensy config is empty, loading default.");
+        Serial.println("Motor config is empty, loading default.");
         return false;
+    }
+    if (savedConfig.containsKey("invertDirection"))
+    {
+        invertDirection = savedConfig["invertDirection"];
     }
     if (savedConfig.containsKey("AMAX_RPM_S_2"))
     {
@@ -163,9 +184,17 @@ bool MotorConfig::load(Stream *stream)
     {
         DC_SG = savedConfig["DC_SG"];
     }
-    if (savedConfig.containsKey("CAL_ROT"))
+    if (savedConfig.containsKey("pid_P"))
     {
-        CAL_ROT = savedConfig["CAL_ROT"];
+        pid_P = savedConfig["pid_P"];
+    }
+    if (savedConfig.containsKey("pid_I"))
+    {
+        pid_I = savedConfig["pid_I"];
+    }
+    if (savedConfig.containsKey("pid_D"))
+    {
+        pid_D = savedConfig["pid_D"];
     }
     if (savedConfig.containsKey("was_min"))
     {
@@ -180,7 +209,7 @@ bool MotorConfig::load(Stream *stream)
         was_max = savedConfig["was_max"];
     }
 
-    Serial.println("Teensy config loaded successfully.");
+    Serial.println("Motor config loaded successfully.");
 
     return true;
 }
@@ -204,10 +233,10 @@ bool MotorConfig::loadFromFile(FS *fs)
 JsonDocument MotorConfig::json()
 {
     JsonDocument jsonDocument;
+    jsonDocument["invertDirection"] = invertDirection;
     jsonDocument["MICRO_STEPS"] = MICRO_STEPS;
     jsonDocument["STEPS_PER_ROT"] = STEPS_PER_ROT;
     jsonDocument["RMS_CURRENT"] = RMS_CURRENT;
-    jsonDocument["CAL_ROT"] = CAL_ROT;
     jsonDocument["hold_multiplier"] = hold_multiplier;
     jsonDocument["freewheel"] = freewheel;
     jsonDocument["AMAX_RPM_S_2"] = AMAX_RPM_S_2;
@@ -238,6 +267,9 @@ JsonDocument MotorConfig::json()
     jsonDocument["TBL"] = TBL;
     jsonDocument["TPOWERDOWN"] = TPOWERDOWN;
     jsonDocument["TZEROWAIT"] = TZEROWAIT;
+    jsonDocument["pid_P"] = pid_P;
+    jsonDocument["pid_I"] = pid_I;
+    jsonDocument["pid_D"] = pid_D;
     jsonDocument["was_min"] = was_min;
     jsonDocument["was_center"] = was_center;
     jsonDocument["was_max"] = was_max;
@@ -276,9 +308,9 @@ String MotorConfig::getDescription(String key)
     {
         return "Multiplicator to get IHOLD (hold current) from IRUN (running current), set to 0 to allow freewheeling.";
     }
-    else if (key == "CAL_ROT")
+    else if (key == "invertDirection")
     {
-        return "The number of rotations from center the motor should rotate during calibration. Keep low enough that the steering wheel doesn't reach the endstops.";
+        return "Whether the motor should turn in the opposite direction.";
     }
     else if (key == "SGT")
     {
@@ -403,6 +435,18 @@ String MotorConfig::getDescription(String key)
     else if (key == "AMAX_RPM_S_2")
     {
         return "The maximum acceleration rate, in RPM/s^2.";
+    }
+    else if (key == "pid_P")
+    {
+        return "Proportional gain for PID controller.";
+    }
+    else if (key == "pid_I")
+    {
+        return "Integarl gain for PID controller.";
+    }
+    else if (key == "pid_D")
+    {
+        return "Derivative gain for PID controller.";
     }
     else if (key == "was_min")
     {

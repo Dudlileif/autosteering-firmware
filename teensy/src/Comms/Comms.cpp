@@ -1,3 +1,20 @@
+// Copyright (C) 2024 Gaute Hagen
+//
+// This file is part of Autosteering Firmware.
+//
+// Autosteering Firmware is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Autosteering Firmware is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+
 #include "Comms.h"
 
 #include "Config/Config.h"
@@ -5,14 +22,14 @@
 #include "Sensors/Sensors.h"
 #include "StepperMotor/StepperMotor.h"
 
-DMAMEM byte networkSerialReadBuffer[4096];
+DMAMEM byte networkSerialReadBuffer[1024];
 DMAMEM byte networkSerialWriteBuffer[256];
 
 DMAMEM byte gnssSerialWriteBuffer[1024];
 
 MultiStream usbAndNetworkSerial = MultiStream(&Serial, &NETWORK_SERIAL);
 
-boolean enableSerial = false;
+boolean enableUSBSerial = false;
 
 enum MessageType
 {
@@ -21,14 +38,14 @@ enum MessageType
     json
 };
 
-char serialMessage[4096];
+char serialMessage[1024];
 uint16_t serialMessageLength = 0;
 MessageType serialMessageType = none;
 uint16_t serialMessageRtcmLength = 0;
 uint8_t serialMessageBracketOpenCount = 0;
 uint8_t serialMessageBracketCloseCount = 0;
 
-char networkMessage[4096];
+char networkMessage[1024];
 uint16_t networkMessageLength = 0;
 MessageType networkMessageType = none;
 uint16_t networkMessageRtcmLength = 0;
@@ -47,12 +64,12 @@ void commsInit()
     IMU_SERIAL.begin(IMU_BAUD);      // communication to IMU serial
 
     // Add larger buffer so we can receive chuncked RTCM messages
-    NETWORK_SERIAL.addMemoryForRead(networkSerialReadBuffer, 4096);
+    NETWORK_SERIAL.addMemoryForRead(networkSerialReadBuffer, 1024);
     NETWORK_SERIAL.addMemoryForWrite(networkSerialWriteBuffer, 256);
 
     GNSS_SERIAL.addMemoryForWrite(gnssSerialWriteBuffer, 1024);
 
-    Serial.printf("Firmware date: %s\n", FIRMWARE_VERSION);
+    Serial.printf("Teensy firmware version: %s | %s | %s\n", FIRMWARE_TYPE, VERSION, BUILD_TIMESTAMP);
 
     Serial.println("Serial connections initialized.");
 }
@@ -90,7 +107,7 @@ void handlePriorityMessage()
         {
             NETWORK_SERIAL.println("TEENSY VERSION");
             Serial.println("Sending firmware version");
-            NETWORK_SERIAL.println(FIRMWARE_VERSION);
+            NETWORK_SERIAL.println(String(FIRMWARE_TYPE) + String(VERSION));
         }
         else if (strstr(message, "CRASH"))
         {
@@ -130,7 +147,7 @@ void handlePriorityMessage()
 
 void sendToProgram(char *message, int messageSize)
 {
-    if (enableSerial)
+    if (enableUSBSerial)
     {
         Serial.write(message, messageSize);
         Serial.print("\r\n");
@@ -142,8 +159,7 @@ void sendToProgram(char *message, int messageSize)
 
 void sendSensorData()
 {
-    uint32_t now = micros();
-    if (now - SENSOR_PERIOD_US > sensorPrevUpdateTime)
+    if (sensorPrevUpdateElapsedTime > SENSOR_PERIOD_US)
     {
         JsonDocument data = getSensorData();
         int size = measureJson(data);
@@ -154,7 +170,7 @@ void sendSensorData()
             if (char(serialized[0]) == '{' && char(serialized[size - 1]) == '}')
             {
                 sendToProgram(serialized, size);
-                sensorPrevUpdateTime = now;
+                sensorPrevUpdateElapsedTime = 0;
             }
         }
     }
@@ -246,23 +262,35 @@ void handleIncomingData(
             // Get length from packet header
             if (messageLength == 3)
             {
-                messageRtcmLength = ((message[1] << 8) | message[2]);
 
-                // Serial.println(message[1], 2);
-                // Serial.print(message[1], 2);
+                messageRtcmLength = (message[1] << 8 | message[2]);
+
+                // Serial.println(message[1], BIN);
+                // Serial.print(message[1] << 8, BIN);
                 // Serial.print(" + ");
-                // Serial.println(message[2], 2);
-                // Serial.printf("RTCM length: %4d\n", messageRtcmLength);
+                // Serial.println(message[2], BIN);
+                // Serial.print(message[1] << 8, 10);
+                // Serial.print(" + ");
+                // Serial.println(message[2], 10);
+                Serial.printf("RTCM length: %4d\n", messageRtcmLength);
+                if (messageRtcmLength > 1023)
+                {
+                    Serial.println("RTCM length too large, discarding.");
+                    messageType = none;
+                    messageRtcmLength = 0;
+                    messageLength = 0;
+                }
             }
             else if (messageLength == (3 + messageRtcmLength + 3))
             {
-                // Serial.println("RTCM message end found.");
+                Serial.println("RTCM message end found.");
                 messageType = none;
                 messageRtcmLength = 0;
                 messageLength = 0;
             }
             else if (messageLength > (3 + messageRtcmLength + 3))
-            { // Serial.println("RTCM message end not found.");
+            {
+                Serial.println("RTCM message end not found.");
                 messageType = none;
                 messageRtcmLength = 0;
                 messageLength = 0;
@@ -281,7 +309,7 @@ void handleIncomingData(
             if (messageBracketOpenCount == messageBracketCloseCount)
             {
                 JsonDocument document;
-                DeserializationError error = deserializeJson(document, message, messageLength);
+                deserializeJson(document, message, messageLength);
                 if (document.size() > 0)
                 {
                     handleMotorControls(document);
@@ -291,9 +319,14 @@ void handleIncomingData(
                 messageType = none;
             }
         }
-        if (messageLength >= 4096)
+        if (messageLength >= 1024)
         {
             Serial.println("Network message overloaded, clearing...");
+            for (int i = 0; i < 1024; i++)
+            {
+                Serial.print(char(message[i]));
+            }
+            Serial.println();
             messageLength = 0;
             messageType = none;
         }

@@ -15,31 +15,37 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef SENSORS_H
-#define SENSORS_H
+#ifndef TEENSYCOMMS_H
+#define TEENSYCOMMS_H
 
-#include <ArduinoJson.h>
+#include <MotorConfig.h>
 
-#include "Config/Config.h"
-#include "Adafruit_BNO08x_RVC.h"
+const int TEENSY_BAUD = 921600;
 
-extern elapsedMicros sensorPrevUpdateElapsedTime;
+const int TEENSY_SERIAL_TIMEOUT_MS = 1000; // 1.0 s
 
-extern Adafruit_BNO08x_RVC imuRVC;
+extern String teensyCrashReport;
 
-extern BNO08x_RVC_Data currentImuReading;
-extern BNO08x_RVC_Data prevImuReading;
+extern bool teensyUnresponsive;
 
-extern uint16_t wasReading;
+extern MotorConfig motorConfig;
 
-double roundToNumberOfDecimals(double, int);
+extern unsigned long teensyUptimeMs;
 
-void imuInit();
+extern unsigned long lastTeensyCommTime;
 
-void wasInit();
+void sendMotorConfig();
 
-void updateImuReading();
+bool getTeensyFirmwareVersion(bool debugPrint);
 
-JsonDocument getSensorData();
+bool getTeensyCrashReport(bool debugPrint);
+
+bool getTeensyUptime(bool debugPrint);
+
+void rebootTeensy();
+
+int readTeensySerial(uint8_t *buffer);
+
+void checkIfTeensyIsResponding();
 
 #endif

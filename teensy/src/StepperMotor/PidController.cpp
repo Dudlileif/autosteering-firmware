@@ -15,31 +15,36 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef SENSORS_H
-#define SENSORS_H
+#include "PidController.h"
 
-#include <ArduinoJson.h>
+float PidController::next(float error)
+{
+    float output = 0.0;
 
-#include "Config/Config.h"
-#include "Adafruit_BNO08x_RVC.h"
+    float timeInSeconds = time / 1e6;
 
-extern elapsedMicros sensorPrevUpdateElapsedTime;
+    // P, proportional gain applied to the error.
+    output = p * error;
 
-extern Adafruit_BNO08x_RVC imuRVC;
+    // I, add the new error value to the integral/average.
+    integral =
+        (integral * ((integralSize - 1) / integralSize)) + timeInSeconds * error / integralSize;
 
-extern BNO08x_RVC_Data currentImuReading;
-extern BNO08x_RVC_Data prevImuReading;
+    output += i * integral;
 
-extern uint16_t wasReading;
+    // D, the change since the last loop.
+    float derivative = (error - prevError) / timeInSeconds;
 
-double roundToNumberOfDecimals(double, int);
+    output += d * derivative;
 
-void imuInit();
+    prevError = error;
+    time = 0;
+    return output;
+}
 
-void wasInit();
-
-void updateImuReading();
-
-JsonDocument getSensorData();
-
-#endif
+void PidController::clear()
+{
+    prevError = 0;
+    integral = 0;
+    time = 0;
+}

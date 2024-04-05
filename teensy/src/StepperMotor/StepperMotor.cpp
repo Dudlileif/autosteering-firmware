@@ -1,3 +1,20 @@
+// Copyright (C) 2024 Gaute Hagen
+//
+// This file is part of Autosteering Firmware.
+//
+// Autosteering Firmware is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Autosteering Firmware is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+
 #include "StepperMotor.h"
 
 #include "Config/Config.h"
@@ -6,11 +23,13 @@
 
 MotorConfig motorConfig;
 
+PidController pidController;
+
 bool motorEnabled = false;
 bool motorCalibration = false;
 
-float stepperTargetRPM = 0;
-int32_t stepperTargetPosition = 0;
+uint16_t wasTarget = 0;
+
 StepperRampMode stepperRampMode = positive;
 uint32_t stepperVMax = 0;
 
@@ -19,15 +38,10 @@ int32_t stepperPositionActual = 0;
 uint16_t stepperStallguardResult = 0;
 uint8_t stepperCurrentScale = 0;
 
-unsigned long stepperPrevUpdateTime = 0;
-unsigned long stepperPrevCommandTime = 0;
+bool calibrationTarget = 0;
 
-float stepsPerWASIncrementMinToCenter = -1;
-float stepsPerWASIncrementCenterToMax = -1;
-bool wasCalibrationCentered = false;
-int16_t wasCalibrationStart = -1;
-int8_t calibrationDirectionFix = 1;
-elapsedMillis sinceCalibrationDirectionFixChange;
+elapsedMicros stepperElapsedTime;
+elapsedMicros stepperLastCommandElapsedTime;
 
 const uint32_t f_clk = 12000000;
 
@@ -37,9 +51,9 @@ const float t_acc = 0.015271; // pow(2, 41) / pow(f_clk, 2)
 // On TMC5160 BOB                          CSN   (r_sense, ohm)  SDI           SDO           SCK    (link_address)
 TMC5160Stepper stepper = TMC5160Stepper(PIN_SPI_SS1, 0.075, PIN_SPI_MOSI1, PIN_SPI_MISO1, PIN_SPI_SCK1, -1);
 
-uint32_t motorStallTime = 0;
-int32_t motorStartPosition = 0;
-float calRotStartFraction = 0; // -1...1, position of starting point in the available range
+elapsedMicros stallElapsedtime;
+
+// TODO: implement PID, send was targets instead of motor rpm
 
 void stepperInit()
 {
@@ -68,8 +82,8 @@ void stepperInit()
     stepper.AMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
     stepper.DMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
     stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM / 2));
-    stepper.a1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
-    stepper.d1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
+    stepper.a1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2 / 2));
+    stepper.d1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2 / 2));
 
     // Sets the wait time at zero velocity after a ramp before continuing
     // to the other side of zero.
@@ -100,6 +114,11 @@ void stepperInit()
     stepper.VDCMIN(tFromRPM(motorConfig.VDCMIN_RPM));
     stepper.dc_time(motorConfig.DC_TIME);
     stepper.dc_sg(motorConfig.DC_SG);
+
+    pidController.clear();
+    pidController.p = motorConfig.pid_P;
+    pidController.i = motorConfig.pid_I;
+    pidController.d = motorConfig.pid_D;
 
     Serial.println("Stepper initialized.");
     restartStepper();
@@ -157,6 +176,7 @@ float rpms2FromAcceleration(uint32_t acceleration)
 
 void restartStepper()
 {
+    pidController.clear();
     stepper.toff(0);
     stepper.sg_stop(0);
     stepper.sg_stop(motorConfig.sg_stop);
@@ -164,28 +184,20 @@ void restartStepper()
     Serial.println("Stepper restarted.");
 }
 
-void setCalRotFraction()
-{
-    int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
-
-    calRotStartFraction = constrain(2 * (stepperPositionActual - minPos) / float(2 * positionFromRotations(motorConfig.CAL_ROT)) - 1, -1, 1);
-}
-
 void handleMotorControls(JsonDocument &document)
 {
     JsonObject data = document.as<JsonObject>();
 
-    JsonVariant motorRPM = data["motor_rpm"];
+    JsonVariant wasTargetPos = data["was_target"];
     JsonVariant enableMotor = data["enable_motor"];
     JsonVariant calibrate = data["motor_en_cal"];
 
-    if (!motorRPM.isNull())
+    if (!wasTargetPos.isNull())
     {
-        stepperTargetRPM = motorRPM;
-
+        wasTarget = constrain(wasTargetPos, motorConfig.was_min, motorConfig.was_max);
         if (!enableMotor.isNull())
         {
-            if (motorEnabled != enableMotor && micros() - motorStallTime > 5e6)
+            if (motorEnabled != enableMotor && stallElapsedtime > 5e6)
             {
                 restartStepper();
             }
@@ -209,219 +221,104 @@ void handleMotorControls(JsonDocument &document)
         char message[] = "{\"motor_enabled\": false}";
         sendToProgram(message, sizeof(message));
     }
-    stepperPrevCommandTime = micros();
+    stepperLastCommandElapsedTime = 0;
 }
 
-void calibrateStepsPerWASIncrement()
+float normalizeWasReading(uint16_t reading)
 {
-    if (motorCalibration && motorEnabled && wasReading > 0)
+    float normalizedWasReading = 0.5;
+
+    if (reading < motorConfig.was_center)
     {
-        if (!wasCalibrationCentered && wasCalibrationStart < 0)
-        {
-            wasCalibrationStart = wasReading;
-        }
-        if (!wasCalibrationCentered && wasReading < motorConfig.was_center - 100)
-        {
-            if (wasReading < wasCalibrationStart - 10 && sinceCalibrationDirectionFixChange > 1000)
-            {
-                calibrationDirectionFix *= -1;
-                sinceCalibrationDirectionFixChange = 0;
-            }
-            stepper.VMAX(velocityFromRPM(20));
-            stepper.RAMPMODE(positioning);
-            stepper.XTARGET(stepperPositionActual - calibrationDirectionFix * int(0.1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS));
-        }
-        else if (!wasCalibrationCentered && wasReading > motorConfig.was_center - 100)
-        {
-            if (wasReading > wasCalibrationStart + 10 && sinceCalibrationDirectionFixChange > 1000)
-            {
-                calibrationDirectionFix *= -1;
-                sinceCalibrationDirectionFixChange = 0;
-            }
-            stepper.VMAX(velocityFromRPM(20));
-            stepper.RAMPMODE(positioning);
-            stepper.XTARGET(stepperPositionActual + calibrationDirectionFix * int(0.1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS));
-        }
-
-        else if (!wasCalibrationCentered && wasReading > motorConfig.was_center - 100 && wasReading < motorConfig.was_center + 100)
-        {
-            wasCalibrationCentered = true;
-            wasCalibrationStart = -1;
-        }
-        if (stepsPerWASIncrementMinToCenter < 0 && wasCalibrationCentered)
-        {
-            if (wasCalibrationStart < 0 && stepper.position_reached())
-            {
-                wasCalibrationStart = wasReading;
-                stepper.VMAX(velocityFromRPM(40));
-                stepper.RAMPMODE(positioning);
-                stepper.XTARGET(stepperPositionActual + calibrationDirectionFix * 1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
-            }
-            else if (wasCalibrationStart > 0 && stepper.position_reached())
-            {
-                stepsPerWASIncrementMinToCenter = sqrt(pow(wasReading - wasCalibrationStart, 2)) / (1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
-                wasCalibrationStart = -1;
-                wasCalibrationCentered = false;
-            }
-        }
-        else if (stepsPerWASIncrementCenterToMax < 0 && wasCalibrationCentered)
-        {
-
-            if (wasCalibrationStart < 0 && stepper.position_reached())
-            {
-                wasCalibrationStart = wasReading;
-                stepper.VMAX(velocityFromRPM(40));
-                stepper.RAMPMODE(positioning);
-                stepper.XTARGET(stepperPositionActual - calibrationDirectionFix * 1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
-            }
-            else if (wasCalibrationStart > 0 && stepper.position_reached())
-            {
-                stepsPerWASIncrementCenterToMax = sqrt(pow(wasReading - wasCalibrationStart, 2)) / (1 * motorConfig.STEPS_PER_ROT * motorConfig.MICRO_STEPS);
-                wasCalibrationStart = -1;
-                wasCalibrationCentered = false;
-            }
-        }
+        normalizedWasReading = 0.5 * (reading - motorConfig.was_min) / (motorConfig.was_center - motorConfig.was_min);
     }
+    else if (reading > motorConfig.was_center)
+    {
+        normalizedWasReading = 0.5 + 0.5 * (reading - motorConfig.was_center) / (motorConfig.was_max - motorConfig.was_center);
+    }
+
+    return constrain(normalizedWasReading, 0.0, 1.0);
 }
 
 void updateStepper()
 {
     digitalWrite(MOTOR_ENABLE_PIN, !motorEnabled);
 
-    unsigned long now = micros();
-    if (now - stepperPrevCommandTime > STEPPER_COMMAND_UPDATE_US)
+    if (stepperLastCommandElapsedTime > STEPPER_COMMAND_UPDATE_US)
     {
         if (motorEnabled)
         {
             stepperVMax = 0;
-            stepperTargetRPM = 0;
             motorEnabled = false;
             Serial.println("Motor stopped, too long since last command.");
-            setCalRotFraction();
             char message[] = "{\"motor_no_command\": true}";
             sendToProgram(message, sizeof(message));
         }
         motorCalibration = false;
     }
-    if (now - stepperPrevUpdateTime > STEPPER_PERIOD_US)
+    if (stepperElapsedTime > STEPPER_PERIOD_US)
     {
-        stepperPrevUpdateTime = now;
-
+        stepperElapsedTime = 0;
         stepperStallguardResult = stepper.sg_result();
         stepperCurrentScale = stepper.cs_actual();
-
         stepperRPMActual = rpmFromVelocity(stepper.VACTUAL());
         stepperPositionActual = stepper.XACTUAL();
-        if (motorCalibration)
+        if (motorEnabled)
         {
+            float normalizedReading = normalizeWasReading(wasReading);
 
-            if (motorEnabled)
+            if (stepper.stallguard())
             {
-
-                if (stepper.stallguard())
-                {
-                    Serial.println("Motor stalled.");
-                    motorStallTime = now;
-                    motorEnabled = false;
-                    setCalRotFraction();
-                }
-                else
-                {
-                    if (stepsPerWASIncrementMinToCenter > 0 && stepsPerWASIncrementCenterToMax > 0)
-                    {
-                        // Negative
-                        int32_t centerToMin = (motorConfig.was_min - motorConfig.was_center) * stepsPerWASIncrementMinToCenter;
-                        // Positive
-                        int32_t centerToMax = (motorConfig.was_max - motorConfig.was_center) * stepsPerWASIncrementCenterToMax;
-                        // Positive < was_center < Negative
-                        int32_t readingToCenter = wasReading < motorConfig.was_center ? (motorConfig.was_center - wasReading) * stepsPerWASIncrementMinToCenter : (motorConfig.was_center - wasReading) * stepsPerWASIncrementCenterToMax;
-
-                        int32_t minPos = stepperPositionActual + readingToCenter + centerToMin;
-                        int32_t maxPos = stepperPositionActual + readingToCenter + centerToMax;
-                        if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
-                        {
-                            stepperTargetPosition = minPos;
-                        }
-
-                        if (stepper.position_reached())
-                        {
-                            // Next target is the one furthest away.
-                            stepperTargetPosition = pow(stepperPositionActual - minPos, 2) > pow(stepperPositionActual - maxPos, 2) ? minPos : maxPos;
-                        }
-
-                        stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
-                        stepper.RAMPMODE(positioning);
-                        stepper.XTARGET(stepperTargetPosition);
-                    }
-                    else
-                    {
-                        calibrateStepsPerWASIncrement();
-                    }
-                    // int32_t minPos = motorStartPosition - (1 + calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
-                    // int32_t maxPos = motorStartPosition + (1 - calRotStartFraction) * positionFromRotations(motorConfig.CAL_ROT);
-                    // if (stepperTargetPosition != minPos && stepperTargetPosition != maxPos)
-                    // {
-                    //     stepperTargetPosition = minPos;
-                    // }
-
-                    // if (stepper.position_reached())
-                    // {
-
-                    //     stepperTargetPosition = stepperPositionActual > motorStartPosition ? minPos : maxPos;
-                    // }
-
-                    // stepper.VMAX(velocityFromRPM(motorConfig.VMAX_RPM));
-                    // stepper.RAMPMODE(positioning);
-                    // stepper.XTARGET(stepperTargetPosition);
-
-                    // Serial.printf(
-                    //     "TOFF: %2d, Pos: %12d, Target: %12d, Vel: %12d, RPM: %5.1f, TSTEP: %7d, CS: %2d, GSTAT: %d%d%d, SG: %4d, FS: %1d\n",
-                    //     stepper.toff(),
-                    //     stepper.XACTUAL(),
-                    //     stepper.XTARGET(),
-                    //     stepper.VACTUAL(),
-                    //     stepperRPMActual,
-                    //     stepper.TSTEP(),
-                    //     stepperCurrentScale,
-                    //     stepper.reset(), stepper.drv_err(), stepper.uv_cp(),
-                    //     stepperStallguardResult,
-                    //     stepper.fsactive());
-                }
-            }
-            else if (!motorEnabled && now - motorStallTime > 5e6)
-            {
-                restartStepper();
-                motorEnabled = true;
-            }
-        }
-        else
-        {
-            float absTargetRPM = abs(stepperTargetRPM);
-
-            float constrainedRPMTarget = constrain(absTargetRPM, 0.0, motorConfig.VMAX_RPM);
-
-            stepperVMax = velocityFromRPM(constrainedRPMTarget);
-
-            stepperRampMode = stepperTargetRPM < 0 ? negative : positive;
-
-            stepper.VMAX(motorEnabled ? stepperVMax : 0);
-            stepper.RAMPMODE(stepperRampMode);
-
-            if (motorEnabled)
-            {
-                if (stepper.stallguard())
-                {
-                    Serial.println("Motor stalled!");
-                    motorEnabled = false;
-                    setCalRotFraction();
-                    char message[26] = "{\"motor_stalled\": true}";
-                    sendToProgram(message, sizeof(message));
-                }
+                Serial.println("Motor stalled!");
+                motorEnabled = false;
+                char message[26] = "{\"motor_stalled\": true}";
+                sendToProgram(message, sizeof(message));
+                stallElapsedtime = 0;
+                stepper.VMAX(0);
             }
             else
             {
-                stepper.VMAX(0);
+                float velocityGain = 0;
+                if (motorCalibration)
+                {
+                    float difference = sqrt(
+                        pow(normalizedReading - calibrationTarget, 2));
+                    if (difference < 0.05)
+                    {
+                        if (calibrationTarget < 0.5)
+                        {
+                            calibrationTarget = 1;
+                        }
+                        else if (calibrationTarget > 0.5)
+                        {
+                            calibrationTarget = 0;
+                        }
+                    }
+                    velocityGain = constrain(pidController.next(calibrationTarget - normalizedReading), -1, 1);
+                }
+                else
+                {
+                    float normalizedTarget = normalizeWasReading(wasTarget);
+                    velocityGain = constrain(pidController.next(normalizedTarget - normalizedReading), -1, 1);
+                }
+                stepperVMax = abs(velocityGain) * velocityFromRPM(motorConfig.VMAX_RPM);
+                StepperRampMode mode = velocityGain >= 0 ? positive : negative;
+                if (motorConfig.invertDirection)
+                {
+                    mode = mode == positive ? negative : positive;
+                }
+                stepper.VMAX(motorEnabled ? stepperVMax : 0);
+                stepper.RAMPMODE(mode);
             }
+        }
+        else if (motorCalibration && stallElapsedtime > 5e6)
+        {
+            restartStepper();
+            motorEnabled = true;
+        }
+        else
+        {
+            stepper.VMAX(0);
         }
     }
 }

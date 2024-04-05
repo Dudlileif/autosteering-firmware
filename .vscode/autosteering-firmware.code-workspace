@@ -5,18 +5,47 @@
 			"path": "../"
 		},
 		{
-			"name": "esp32",
-			"path": "../esp32"
+			"name": "autosteering_bridge",
+			"path": "../esp32/autosteering_bridge"
 		},
 		{
 			"name": "teensy",
 			"path": "../teensy"
+		},
+		{
+			"name": "base_station",
+			"path": "../esp32/base_station"
 		}
 	],
 	"settings": {
 		"files.associations": {
 			"cmath": "cpp",
-			"numbers": "cpp"
+			"numbers": "cpp",
+			"chrono": "cpp",
+			"string": "cpp",
+			"*.tcc": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp",
+			"regex": "cpp",
+			"bitset": "cpp",
+			"utility": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"typeinfo": "cpp",
+			"optional": "cpp",
+			"system_error": "cpp",
+			"fstream": "cpp",
+			"atomic": "cpp",
+			"sstream": "cpp"
 		}
+		,
+		"licenser.author": "Gaute Hagen",
+		"licenser.license": "GPLv3",
+		"licenser.projectName": "Autosteering Firmware",
 	}
 }

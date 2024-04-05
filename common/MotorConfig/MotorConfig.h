@@ -1,3 +1,20 @@
+// Copyright (C) 2024 Gaute Hagen
+//
+// This file is part of Autosteering Firmware.
+//
+// Autosteering Firmware is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Autosteering Firmware is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef MOTORCONFIG_H
 #define MOTORCONFIG_H
 
@@ -7,6 +24,7 @@
 
 #define MOTOR_CONFIG_FILE "/motor_config"
 
+#define DEFAULT_INVERT_DIRECTION false
 #define DEFUALT_AMAX_RPM_S_2 100
 #define DEFAULT_VMAX_RPM 200
 #define DEFAULT_VSTOP 10
@@ -27,7 +45,7 @@
 #define DEFAULT_PWM_AUTOSCALE true
 #define DEFAULT_PWM_AUTOGRAD false
 #define DEFAULT_SFILT false
-#define DEFAULT_SG_STOP 1
+#define DEFAULT_SG_STOP true
 #define DEFAULT_SGT 16
 #define DEFAULT_TPWMTHRS_RPM 40
 #define DEFAULT_CHM 0
@@ -41,10 +59,13 @@
 #define DEFAULT_DC_TIME 64
 #define DEFAULT_DC_SG 5
 
-#define DEFAULT_CAL_ROT 2.0
-#define WAS_MIN -1
-#define WAS_CENTER -1
-#define WAS_MAX -1
+#define DEFAULT_PID_P 20.0
+#define DEFAULT_PID_I 0.130
+#define DEFAULT_PID_D 0.063
+
+#define WAS_MIN 250
+#define WAS_CENTER 2000
+#define WAS_MAX 3750
 
 class MotorConfig
 {
@@ -61,9 +82,8 @@ public:
     // The motor current in mA
     uint16_t RMS_CURRENT;
 
-    // The number of rotations from 0 the motor should
-    // spin in both direactions  during calibration.
-    float CAL_ROT;
+    /// Whether the motor should turn in the opposite direction.
+    bool invertDirection;
 
     // 0.0...1.0, Mutliplier to get IHOLD from IRUN (IHOLD_IRUN).
     float hold_multiplier;
@@ -212,17 +232,27 @@ public:
     // Enable automatic tuning of PWM_GRAD
     bool pwm_autograd;
 
+    /// Proportional PID controller gain.
+    float pid_P;
+
+    /// Integral PID controller gain.
+    float pid_I;
+
+    /// Derivative PID controller gain.
+    float pid_D;
+
     // Minium reading value for the WAS (usually full left turn).
-    int16_t was_min;
+    uint16_t was_min;
 
     // Minium reading value for the WAS (wheels pointing straight).
-    int16_t was_center;
+    uint16_t was_center;
 
     // Maximum reading value for the WAS (usually full right turn).
-    int16_t was_max;
+    uint16_t was_max;
 
     MotorConfig()
     {
+        invertDirection = DEFAULT_INVERT_DIRECTION;
         AMAX_RPM_S_2 = DEFUALT_AMAX_RPM_S_2;
         VMAX_RPM = DEFAULT_VMAX_RPM;
         VSTOP = DEFAULT_VSTOP;
@@ -255,7 +285,9 @@ public:
         VDCMIN_RPM = DEFAULT_VDCMIN_RPM;
         DC_TIME = DEFAULT_DC_TIME;
         DC_SG = DEFAULT_DC_SG;
-        CAL_ROT = DEFAULT_CAL_ROT;
+        pid_P = DEFAULT_PID_P;
+        pid_I = DEFAULT_PID_I;
+        pid_D = DEFAULT_PID_D;
         was_min = WAS_MIN;
         was_center = WAS_CENTER;
         was_max = WAS_MAX;

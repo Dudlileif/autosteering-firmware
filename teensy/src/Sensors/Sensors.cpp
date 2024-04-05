@@ -1,9 +1,26 @@
+// Copyright (C) 2024 Gaute Hagen
+//
+// This file is part of Autosteering Firmware.
+//
+// Autosteering Firmware is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Autosteering Firmware is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+
 #include <ADC.h>
 #include <ADC_util.h>
 #include "Sensors.h"
 #include "StepperMotor/StepperMotor.h"
 
-unsigned long sensorPrevUpdateTime = 0;
+elapsedMicros sensorPrevUpdateElapsedTime;
 
 Adafruit_BNO08x_RVC imuRVC;
 
@@ -38,8 +55,8 @@ void imuInit()
 
 void wasInit()
 {
-    adc->adc0->setAveraging(16);
-    adc->adc0->setResolution(16);
+    adc->adc0->setAveraging(32);
+    adc->adc0->setResolution(12);
     adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED);
     adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED);
     adc->adc0->startContinuous(PIN_WAS);
@@ -122,11 +139,15 @@ JsonDocument getSensorData()
 {
     JsonDocument data;
 
+    // Only send IMU readings that are somewhat close to the previous
     if (abs(prevImuReading.yaw - currentImuReading.yaw) < 20 && abs(prevImuReading.pitch - currentImuReading.pitch) < 20 && abs(prevImuReading.roll - currentImuReading.roll) < 20)
     {
         data["yaw"] = roundToNumberOfDecimals(currentImuReading.yaw, 3);
         data["pitch"] = roundToNumberOfDecimals(currentImuReading.pitch, 3);
         data["roll"] = roundToNumberOfDecimals(currentImuReading.roll, 3);
+        data["acc_x"] = roundToNumberOfDecimals(currentImuReading.x_accel, 3);
+        data["acc_y"] = roundToNumberOfDecimals(currentImuReading.y_accel, 3);
+        data["acc_z"] = roundToNumberOfDecimals(currentImuReading.z_accel, 3);
     }
 
     if (adc->adc0->isComplete())
@@ -141,16 +162,9 @@ JsonDocument getSensorData()
         data["motor_rpm"] = roundToNumberOfDecimals(stepperRPMActual, 3);
         data["motor_sg"] = stepperStallguardResult;
         data["motor_cs"] = stepperCurrentScale;
-        if (motorCalibration)
-        {
-            data["motor_pos"] = roundToNumberOfDecimals(rotationsFromPosition(stepperPositionActual), 2);
-            data["motor_target"] = roundToNumberOfDecimals(rotationsFromPosition(stepperTargetPosition), 2);
-        }
+        data["was_target"] = wasTarget;
     }
-
-    prevImuReading.yaw = currentImuReading.yaw;
-    prevImuReading.pitch = currentImuReading.pitch;
-    prevImuReading.roll = currentImuReading.roll;
+    prevImuReading = currentImuReading;
 
     return data;
 }
