@@ -16,7 +16,6 @@
 # along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
-import json
 import os
 
 Import("env")
@@ -29,12 +28,9 @@ if dev_build:
     if os.path.exists(VERSION_FILE):
         try:
             with open(VERSION_FILE, "r", encoding="utf-8") as version_file:
-                dev_version = int(version_file.readline()) + 1
+                dev_version = int(version_file.readline())
         except (OSError, ValueError):
-            print("No dev version file found or it is corrupted, creating new one.")
-
-    with open(VERSION_FILE, "w", encoding="utf-8") as version_file:
-        version_file.write(str(dev_version))
+            print("No dev version file found")
 
     version = "{}{}".format(
         env.GetProjectConfig().get("common", "version_string"),

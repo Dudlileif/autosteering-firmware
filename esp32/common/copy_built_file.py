@@ -20,11 +20,10 @@ import shutil
 
 Import("env")
 
-
-def copy_built_file_to_parent_dir(source, target, env):
+def copy_built_file_to_build_directory(source, target, env) -> None:
     print("Program has been built!")
 
-    dest_dir = os.path.join(env["PROJECT_DIR"], "../../builds")
+    dest_dir: str = os.path.join(env["PROJECT_DIR"], "../../builds")
     os.makedirs(dest_dir, exist_ok=True)
 
     firmware_type: str = (
@@ -50,7 +49,7 @@ def copy_built_file_to_parent_dir(source, target, env):
 
     for file in os.listdir(os.path.join(env["PROJECT_DIR"], "../../builds/")):
         if file.startswith(firmware_type):
-            path = os.path.join(env["PROJECT_DIR"], "../../builds", file)
+            path: str = os.path.join(env["PROJECT_DIR"], "../../builds", file)
             print("Removing old build: ", path)
             os.remove(path)
 
@@ -58,17 +57,17 @@ def copy_built_file_to_parent_dir(source, target, env):
     print("Version:", version)
     print("Build timestamp:", build_timestamp)
 
-    dest_path = os.path.join(
+    dest_path: str = os.path.join(
         env["PROJECT_DIR"],
         str.join("", ["../../builds/", firmware_type, "_", version, ".bin"]),
     )
-    program_path = target[0].get_abspath()
+    program_path: str = target[0].get_abspath()
     print("Program path:", program_path)
     print("Destination path:", dest_path)
     shutil.copy(program_path, dest_path)
 
-    partitions_path = program_path.replace("firmware.bin", "partitions.bin")
-    dest_path_partitions = os.path.join(
+    partitions_path: str = program_path.replace("firmware.bin", "partitions.bin")
+    dest_path_partitions: str = os.path.join(
         env["PROJECT_DIR"],
         str.join(
             "",
@@ -80,5 +79,4 @@ def copy_built_file_to_parent_dir(source, target, env):
     print("Partitions destination path:", dest_path_partitions)
     shutil.copy(partitions_path, dest_path_partitions)
 
-
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", copy_built_file_to_parent_dir)
+env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", copy_built_file_to_build_directory)

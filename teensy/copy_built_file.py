@@ -67,5 +67,4 @@ def copy_built_file_to_parent_dir(source, target, env):
     print("Destination path", dest_path)
     shutil.copy(program_path, dest_path)
 
-
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.hex", copy_built_file_to_parent_dir)
