@@ -17,11 +17,15 @@
 
 import datetime
 import os
+from pickle import BUILD
 
 Import("env")
 
 VERSION_FILE = "dev_version"
 dev_version = 0
+
+
+version: str = env.GetProjectConfig().get("common", "version")
 
 dev_build: bool = env.GetProjectConfig().getboolean("common", "dev_build")
 if dev_build:
@@ -33,13 +37,16 @@ if dev_build:
             print("No dev version file found")
 
     version = "{}{}".format(
-        env.GetProjectConfig().get("common", "version_string"),
+        version,
         "_dev.{}".format(dev_version) if dev_build else "",
     )
-    env.GetProjectConfig().set("common", "version_string", version)
-    print("Dev version:", version)
+    print("Dev version:", version) 
 
-env.GetProjectConfig().set("common", "build_timestamp", str(datetime.datetime.now()))
+build_flags: list[str] = env["BUILD_FLAGS"]
+build_flags.append("-D VERSION='\"{}\"'".format(version))
+build_flags.append("-D BUILD_TIMESTAMP='\"{}\"'".format(datetime.datetime.now().isoformat()))
+
+env["BUILD_FLAGS"] = build_flags
 
 check_sum_path: str = os.path.join(env["PROJECT_DIR"], ".pio/build/project.checksum")
 if os.path.exists(check_sum_path):

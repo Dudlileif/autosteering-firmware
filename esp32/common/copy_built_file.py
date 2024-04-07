@@ -33,19 +33,9 @@ def copy_built_file_to_build_directory(source, target, env) -> None:
         .replace('"', "")
     )
 
-    version: str = (
-        env.GetProjectConfig()
-        .get("common", "version_string")
-        .replace("'", "")
-        .replace('"', "")
-    )
+    version: str = env["BUILD_FLAGS"][4].split('=\'"')[1].split('"\'')[0]
 
-    build_timestamp: str = (
-        env.GetProjectConfig()
-        .get("common", "build_timestamp")
-        .replace("'", "")
-        .replace('"', "")
-    )
+    build_timestamp: str = env["BUILD_FLAGS"][5].split("='\"")[1].split("\"'")[0]
 
     for file in os.listdir(os.path.join(env["PROJECT_DIR"], "../../builds/")):
         if file.startswith(firmware_type):

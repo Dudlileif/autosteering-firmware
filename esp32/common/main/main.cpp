@@ -51,7 +51,6 @@ void mainSetup()
 
     Serial.begin(SERIAL_BAUD);
     Serial.printf("ESP32 firmware version: %s | %s | %s\n", FIRMWARE_TYPE, VERSION, BUILD_TIMESTAMP);
-
     wifiConfig.load(&LittleFS);
 
     Serial.printf("UDP ports:\n\tSend: %d\n\tRecieve: %d\n", wifiConfig.udpSendPort, wifiConfig.udpReceivePort);
