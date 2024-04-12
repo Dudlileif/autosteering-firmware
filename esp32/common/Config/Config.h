@@ -22,17 +22,10 @@
 // If using ESP32-WROVER module, pins 6-11, 16 and 17 are already in use by the extended
 // memory.
 
-#ifdef BASE_STATION
-#define RXD2 27
-#define TXD2 26
-#endif
-
-#ifndef BASE_STATION
 #define RXD2 2
 #define TXD2 4
-#endif
 
-#define TEENSY_SERIAL Serial2 // Pins: RX: 27, TX: 26
+#define TEENSY_SERIAL Serial2 // Pins: RX: 2, TX: 4
 #define GNSS_SERIAL Serial2   // Pins: RX: 2, TX: 4
 
 #define FORMAT_LITTLEFS_IF_FAILED true
