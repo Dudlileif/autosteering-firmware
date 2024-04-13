@@ -17,6 +17,7 @@
 
 #ifndef CONFIG_H
 #define CONFIG_H
+#include <Arduino.h>
 #include <sys/types.h>
 
 // If using ESP32-WROVER module, pins 6-11, 16 and 17 are already in use by the extended
@@ -35,10 +36,29 @@ const int PRIORITY_MESSAGE_SIGNAL_PIN = 23;
 const int WIFI_LED_R = 18;
 const int WIFI_LED_G = 21;
 const int WIFI_LED_B = 19;
-const int SEND_LED_PIN = 15;
+const int SEND_LED_PIN = 5;
+
+#ifdef BASE_STATION
+const int GNSS_READ_FAIL_LED_PIN = 27;
+#endif
+
+const uint SEND_LED_ON_MS = 250;
 
 const int SERIAL_BAUD = 115200;
 
-const uint HEARTBEAT_BUFFER = 5000; // Milliseconds, UDP clients are dropped if not receiving a heartbeat within this time.
+const uint HEARTBEAT_BUFFER_MS = 5000; // Milliseconds, UDP clients are dropped if not receiving a heartbeat within this time.
+
+typedef struct color_t
+{
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+} color_t;
+
+const color_t colorBlue = color_t{0, 0, 127};
+const color_t colorGreen = color_t{0, 127, 0};
+const color_t colorRed = color_t{127, 0, 0};
+const color_t colorPink = color_t{63, 127, 63};
+const color_t colorYellow = color_t{127, 127, 0};
 
 #endif

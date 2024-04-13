@@ -20,12 +20,14 @@ void receiveGNSSData()
         {
             Serial.printf("Header error pos 0: %d\n", ubxBuffer[zeroIndex % N]);
             ubxSize = 0;
+            digitalWrite(GNSS_READ_FAIL_LED_PIN, HIGH);
             return;
         }
         if (ubxBuffer[(zeroIndex + 1) % N] != 0x62)
         {
             Serial.printf("Header error pos 1: %d\n", ubxBuffer[(zeroIndex + 1) % N]);
             ubxSize = 0;
+            digitalWrite(GNSS_READ_FAIL_LED_PIN, HIGH);
             return;
         }
 
@@ -42,6 +44,10 @@ void receiveGNSSData()
                     ckB += ckA;
                 }
                 bool endsCorrectly = ckA == ubxBuffer[(zeroIndex + payloadSize + 6) % N] && ckB == ubxBuffer[(zeroIndex + payloadSize + 7) % N];
+                if (endsCorrectly)
+                {
+                    digitalWrite(GNSS_READ_FAIL_LED_PIN, LOW);
+                }
 
                 if (!endsCorrectly)
                 {

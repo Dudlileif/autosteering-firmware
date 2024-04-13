@@ -21,10 +21,11 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <WiFiAP.h>
-#include "WiFiUdp.h"
+#include <WiFiUdp.h>
 #include <AsyncTCP.h>
 #include <WiFiConfig.h>
 #include <ESPmDNS.h>
+#include <../Config/Config.h>
 
 extern WiFiConfig wifiConfig;
 
@@ -44,7 +45,7 @@ extern AsyncClient *tcpClient;
 
 extern wl_status_t prevWiFiClientStatus;
 
-void setWiFiLED(int r, int g, int b);
+void setWiFiLED(color_t color);
 void startWiFiAP();
 void startWiFiClient();
 void setupTCP();
@@ -62,4 +63,5 @@ void sendUdpPacket(uint8_t *, int, char *, uint);
 void sendUdpData(uint8_t *, int);
 int receiveUdpPacket(char *);
 
+void checkSendLED();
 #endif

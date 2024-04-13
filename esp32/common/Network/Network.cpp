@@ -30,17 +30,18 @@ AsyncClient *tcpClient = nullptr;
 
 wl_status_t prevWiFiClientStatus = WL_DISCONNECTED;
 
-void setWiFiLED(int r, int g, int b)
+uint32_t sendLEDStartTime = 0;
+
+void setWiFiLED(color_t color)
 {
-    analogWrite(WIFI_LED_R, r);
-    analogWrite(WIFI_LED_G, g);
-    analogWrite(WIFI_LED_B, b);
+    analogWrite(WIFI_LED_R, color.red);
+    analogWrite(WIFI_LED_G, color.green);
+    analogWrite(WIFI_LED_B, color.blue);
 }
 
 void startWiFiAP()
 {
-    // Yellow LED
-    setWiFiLED(127, 127, 0);
+    setWiFiLED(colorYellow);
 
     WiFi.disconnect();
     WiFi.mode(WIFI_MODE_APSTA);
@@ -69,8 +70,7 @@ void startWiFiAP()
 
 void startWiFiClient()
 {
-    // Red LED
-    setWiFiLED(127, 0, 0);
+    setWiFiLED(colorRed);
 
     if (strlen(wifiConfig.ssid[0]) == 0)
     {
@@ -158,6 +158,7 @@ void setupTCP()
 
 void checkWiFiStatus()
 {
+    checkSendLED();
     if (WiFi.getMode() == WIFI_MODE_STA)
     {
         wl_status_t status = (wl_status_t)wifiMulti.run(5000);
@@ -173,7 +174,7 @@ void checkWiFiStatus()
         else if (status == WL_CONNECTED)
         {
 
-            setWiFiLED(0, 127, 0);
+            setWiFiLED(colorGreen);
             if (status != prevWiFiClientStatus)
             {
                 Serial.printf("WiFi connected to: %s\n", WiFi.SSID().c_str());
@@ -182,7 +183,7 @@ void checkWiFiStatus()
         }
         else
         {
-            setWiFiLED(127, 0, 0);
+            setWiFiLED(colorRed);
             if (status != prevWiFiClientStatus)
             {
                 Serial.println("WiFi disconnected");
@@ -203,13 +204,11 @@ void checkWiFiStatus()
         uint connected = WiFi.softAPgetStationNum();
         if (connected < 1)
         {
-            // Pink LED
-            setWiFiLED(63, 127, 63);
+            setWiFiLED(colorPink);
         }
         else
         {
-            // Blue LED
-            setWiFiLED(0, 0, 127);
+            setWiFiLED(colorBlue);
         }
         if (prevConnected != connected)
         {
@@ -219,13 +218,11 @@ void checkWiFiStatus()
 
             if (connected < 1)
             {
-                // Yellow LED
-                setWiFiLED(127, 127, 0);
+                setWiFiLED(colorYellow);
             }
             else
             {
-                // Blue LED
-                setWiFiLED(0, 0, 127);
+                setWiFiLED(colorBlue);
             }
         }
     }
@@ -349,7 +346,7 @@ bool checkHeartbeats()
     {
         if (destinations[i].heartbeat != 0)
         {
-            if (millis() - HEARTBEAT_BUFFER > destinations[i].heartbeat)
+            if (millis() - HEARTBEAT_BUFFER_MS > destinations[i].heartbeat)
             {
                 destinations[i].heartbeat = 0;
             }
@@ -368,9 +365,9 @@ void sendUdpPacket(uint8_t *data, int packetSize, IPAddress destinationIP, uint 
     if (sendUDP.beginPacket(destinationIP, destinationPort))
     {
         digitalWrite(SEND_LED_PIN, HIGH);
+        sendLEDStartTime = millis();
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
-        digitalWrite(SEND_LED_PIN, LOW);
     }
 }
 
@@ -379,9 +376,9 @@ void sendUdpPacket(uint8_t *data, int packetSize, char *destinationHost, uint de
     if (sendUDP.beginPacket(destinationHost, destinationPort))
     {
         digitalWrite(SEND_LED_PIN, HIGH);
+        sendLEDStartTime = millis();
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
-        digitalWrite(SEND_LED_PIN, LOW);
     }
 }
 
@@ -430,4 +427,12 @@ IPAddress getIPAddress()
         return WiFi.softAPIP();
     }
     return WiFi.localIP();
+}
+
+void checkSendLED()
+{
+    if (millis() - sendLEDStartTime > SEND_LED_ON_MS)
+    {
+        digitalWrite(SEND_LED_PIN, LOW);
+    }
 }

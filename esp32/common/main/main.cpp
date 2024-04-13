@@ -44,6 +44,9 @@ void mainSetup()
     pinMode(WIFI_LED_G, OUTPUT);
     pinMode(WIFI_LED_B, OUTPUT);
     pinMode(SEND_LED_PIN, OUTPUT);
+#ifdef BASE_STATION
+    pinMode(GNSS_READ_FAIL_LED_PIN, OUTPUT);
+#endif
 
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
 
