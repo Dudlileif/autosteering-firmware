@@ -25,11 +25,11 @@
 
 #include "../Config/Config.h"
 
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
 #include "../GnssComms/GnssComms.h"
 #endif
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 #include "../TeensyComms/TeensyComms.h"
 #endif
 
@@ -44,7 +44,7 @@ void mainSetup()
     pinMode(WIFI_LED_G, OUTPUT);
     pinMode(WIFI_LED_B, OUTPUT);
     pinMode(SEND_LED_PIN, OUTPUT);
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
     pinMode(GNSS_READ_FAIL_LED_PIN, OUTPUT);
 #endif
 
@@ -61,11 +61,11 @@ void mainSetup()
 
     Serial.println("Saved WiFi config json:");
     wifiConfig.printToStreamPretty(&Serial);
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
     GNSS_SERIAL.setRxBufferSize(1024);
     GNSS_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
 #endif
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
     TEENSY_SERIAL.setRxBufferSize(512);
     TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
     motorConfig.loadFromFile(&LittleFS);
@@ -108,10 +108,10 @@ void mainLoop()
 
     if (!uploadingFile && !priorityMessageInProgress)
     {
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
         receiveGNSSData();
 #endif
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
         uint8_t buffer[512];
         int serialSize = readTeensySerial(buffer);
         if (serialSize > 0)

@@ -37,7 +37,7 @@ bool attemptToUpdateSelf(const String &);
 
 bool performUpdate(Stream &updateSource, size_t updateSize);
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 
 bool attemptToUpdateTeensy(const String &);
 

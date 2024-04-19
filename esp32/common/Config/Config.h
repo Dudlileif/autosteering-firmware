@@ -38,9 +38,7 @@ const int WIFI_LED_G = 21;
 const int WIFI_LED_B = 19;
 const int SEND_LED_PIN = 5;
 
-#ifdef BASE_STATION
 const int GNSS_READ_FAIL_LED_PIN = 27;
-#endif
 
 const uint SEND_LED_ON_MS = 250;
 

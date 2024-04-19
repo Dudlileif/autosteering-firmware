@@ -18,7 +18,7 @@
 #include "webpage_firmware.h"
 #include "webpage_main.h"
 #include "webpage_network.h"
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 #include "webpage_motor.h"
 #endif
 #include "webpage_status.h"

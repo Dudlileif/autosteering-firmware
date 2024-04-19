@@ -111,10 +111,10 @@ void startWiFiClient()
 
 static void handleData(void *, AsyncClient *, void *data, size_t len)
 {
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
     GNSS_SERIAL.write((char *)data, len);
 #endif
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
     TEENSY_SERIAL.write((char *)data, len);
 #endif
 }
@@ -401,7 +401,7 @@ int receiveUdpPacket(char *udpPacketBuffer)
 
         size = receiveUDP.read(udpPacketBuffer, size);
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
         updateDestinations();
 
         if (strstr(udpPacketBuffer, "Use me as Ntrip server!"))

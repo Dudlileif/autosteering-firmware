@@ -32,7 +32,7 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request);
 void onUpdateNetworkConfigLocal(AsyncWebServerRequest *request);
 void onUpdateNetworkConfigRemote(AsyncWebServerRequest *request);
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 void onUpdateMotorConfig(AsyncWebServerRequest *request);
 void onUpdateMotorConfigLocal(AsyncWebServerRequest *request);
 void onUpdateMotorConfigRemote(AsyncWebServerRequest *request);

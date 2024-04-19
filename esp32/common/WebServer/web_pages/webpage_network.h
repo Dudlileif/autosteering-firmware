@@ -136,7 +136,7 @@ const char network_html[] PROGMEM = R"rawliteral(
             </tr>
         </table>
         <br>
-        %BASE_STATION%
+        %BASE_STATION_RELAY%
         <h3>Network ports</h3>
         <form action="/update_network_config_local">
             <table>

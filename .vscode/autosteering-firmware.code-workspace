@@ -13,8 +13,8 @@
 			"path": "../teensy"
 		},
 		{
-			"name": "base_station",
-			"path": "../esp32/base_station"
+			"name": "base_station_relay",
+			"path": "../esp32/base_station_relay"
 		}
 	],
 	"settings": {

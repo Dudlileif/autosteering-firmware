@@ -22,14 +22,14 @@
 #include <ArduinoJson.h>
 #include <FS.h>
 
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
 #define DEFAULT_HOSTNAME "gnss-rtk-base-station"
 #define DEFAULT_AP_SSID "Base Station AP"
 #define DEFAULT_AP_PASSWORD "base-station"
 #define DEFAULT_RTK_BASE_STATION_ADDRESS "pirtkbase.local"
 #endif
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 #define DEFAULT_HOSTNAME "autosteering"
 #define DEFAULT_AP_SSID "Tractor Autosteering AP"
 #define DEFAULT_AP_PASSWORD "tractor-autosteering"
@@ -71,7 +71,7 @@ public:
         udpReceivePort = DEFAULT_UDP_RECEIVE_PORT;
         udpSendPort = DEFAULT_UDP_SEND_PORT;
         startInAPMode = false;
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
         strcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS);
 #endif
     };

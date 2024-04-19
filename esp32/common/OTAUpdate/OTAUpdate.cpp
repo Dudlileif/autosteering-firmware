@@ -23,7 +23,7 @@
 #include "../Config/Config.h"
 #include "../WebServer/WebServer.h"
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 #include "../TeensyComms/TeensyComms.h"
 
 String teensyFirmwareVersion;
@@ -59,7 +59,7 @@ void attemptToUpdate()
             Serial.println("ESP was NOT updated");
         }
     }
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
     // Update Teensy
     else if (updateFileName.endsWith(".hex"))
     {
@@ -190,7 +190,7 @@ bool attemptToUpdateSelf(const String &fileName)
     return false;
 }
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
 {
     priorityMessageInProgress = true;

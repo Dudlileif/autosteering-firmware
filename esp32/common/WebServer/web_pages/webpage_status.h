@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware. If not, see https://www.gnu.org/licenses/.
 
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
 const char status_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>
@@ -120,7 +120,7 @@ const char status_html[] PROGMEM = R"rawliteral(
 )rawliteral";
 #endif
 
-#ifndef BASE_STATION
+#ifndef BASE_STATION_RELAY
 const char status_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>

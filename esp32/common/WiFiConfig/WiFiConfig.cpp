@@ -146,7 +146,7 @@ bool WiFiConfig::load(FS *fs)
             Serial.printf("Start in AP mode: %s\n", startInAPMode ? "true" : "false");
         }
 
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
         if (savedWifiConfig.containsKey("rtk_base_station_address"))
         {
             strcpy(rtkBaseStationAddress, savedWifiConfig["rtk_base_station_address"]);
@@ -187,7 +187,7 @@ JsonDocument WiFiConfig::json()
     jsonDocument["udp_receive_port"] = udpReceivePort;
     jsonDocument["udp_send_port"] = udpSendPort;
     jsonDocument["start_in_ap_mode"] = startInAPMode;
-#ifdef BASE_STATION
+#ifdef BASE_STATION_RELAY
     jsonDocument["rtk_base_station_address"] = rtkBaseStationAddress;
 #endif
     return jsonDocument;
