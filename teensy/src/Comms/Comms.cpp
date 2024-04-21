@@ -107,7 +107,7 @@ void handlePriorityMessage()
         {
             NETWORK_SERIAL.println("TEENSY VERSION");
             Serial.println("Sending firmware version");
-            NETWORK_SERIAL.println(String(FIRMWARE_TYPE) + String(VERSION));
+            NETWORK_SERIAL.println(String(FIRMWARE_TYPE) + String("_") + String(VERSION));
         }
         else if (strstr(message, "CRASH"))
         {

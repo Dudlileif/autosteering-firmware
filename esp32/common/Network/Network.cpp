@@ -404,17 +404,23 @@ int receiveUdpPacket(char *udpPacketBuffer)
 #ifndef BASE_STATION_RELAY
         updateDestinations();
 
-        if (strstr(udpPacketBuffer, "Use me as Ntrip server!"))
-        {
-            IPAddress sender = receiveUDP.remoteIP();
-            tcpClient->close();
-            tcpClient->connect(sender, wifiConfig.tcpSendPort);
-            tcpClient->write("Connection from ESP32.");
-            Serial.print("Connected to TCP server: ");
-            Serial.print(sender);
-            Serial.print(":");
-            Serial.println(wifiConfig.tcpSendPort);
-        }
+        // if (strstr(udpPacketBuffer, "Use me as Ntrip server!"))
+        // {
+        //     IPAddress sender = receiveUDP.remoteIP();
+        //     if (tcpClient != nullptr)
+        //     {
+        //         tcpClient->close();
+        //         tcpClient = nullptr;
+        //     }
+        //     *tcpClient=AsyncClient();
+
+        //     tcpClient->connect(sender, wifiConfig.tcpSendPort);
+        //     tcpClient->write("Connection from ESP32.");
+        //     Serial.print("Connected to TCP server: ");
+        //     Serial.print(sender);
+        //     Serial.print(":");
+        //     Serial.println(wifiConfig.tcpSendPort);
+        // }
 #endif
     }
     return size;
