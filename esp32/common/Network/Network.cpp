@@ -32,6 +32,8 @@ wl_status_t prevWiFiClientStatus = WL_DISCONNECTED;
 
 uint32_t sendLEDStartTime = 0;
 
+uint32_t hardwareIdentifierSendTime = 0;
+
 void setWiFiLED(color_t color)
 {
     analogWrite(WIFI_LED_R, color.red);
@@ -158,6 +160,7 @@ void setupTCP()
 
 void checkWiFiStatus()
 {
+    int clientsAlive = checkHeartbeats();
     checkSendLED();
     if (WiFi.getMode() == WIFI_MODE_STA)
     {
@@ -179,6 +182,17 @@ void checkWiFiStatus()
             {
                 Serial.printf("WiFi connected to: %s\n", WiFi.SSID().c_str());
                 Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+                Serial.printf("Gateway IP address: %s\n", WiFi.gatewayIP().toString().c_str());
+            }
+
+            if (millis() - hardwareIdentifierSendTime > 10000)
+            {
+                if (!clientsAlive)
+                {
+                    Serial.printf("Sending identifier message to: %s:%d", WiFi.gatewayIP().toString().c_str(), wifiConfig.udpSendPort);
+                    sendUdpPacket("Steering hardware", 18, WiFi.gatewayIP(), wifiConfig.udpSendPort);
+                }
+                hardwareIdentifierSendTime = millis();
             }
         }
         else
@@ -339,9 +353,9 @@ void updateDestinations()
     destinations[indexToReplace] = dest;
 }
 
-bool checkHeartbeats()
+int checkHeartbeats()
 {
-    bool clientsAlive = false;
+    int clientsAlive = 0;
     for (int i = 0; i < 4; i++)
     {
         if (destinations[i].heartbeat != 0)
@@ -352,7 +366,7 @@ bool checkHeartbeats()
             }
             else
             {
-                clientsAlive = true;
+                clientsAlive++;
             }
         }
     }
@@ -378,6 +392,18 @@ void sendUdpPacket(uint8_t *data, int packetSize, char *destinationHost, uint de
         digitalWrite(SEND_LED_PIN, HIGH);
         sendLEDStartTime = millis();
         sendUDP.write(data, packetSize);
+        sendUDP.endPacket();
+    }
+}
+
+void sendUdpPacket(const char *data, int packetSize, IPAddress destinationIP, uint destinationPort)
+{
+
+    if (sendUDP.beginPacket(destinationIP, destinationPort))
+    {
+        digitalWrite(SEND_LED_PIN, HIGH);
+        sendLEDStartTime = millis();
+        sendUDP.write((const uint8_t *)data, packetSize);
         sendUDP.endPacket();
     }
 }

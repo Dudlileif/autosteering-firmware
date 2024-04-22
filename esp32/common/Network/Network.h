@@ -54,12 +54,13 @@ String wifiClientStatusToString(wl_status_t status);
 String wifiAuthTypeToString(wifi_auth_mode_t authType);
 int findDestinationIndexToOverwrite();
 void updateDestinations();
-bool checkHeartbeats();
+int checkHeartbeats();
 
 IPAddress getIPAddress();
 
 void sendUdpPacket(uint8_t *, int, IPAddress, uint);
 void sendUdpPacket(uint8_t *, int, char *, uint);
+void sendUdpPacket(const char *, int, IPAddress, uint);
 void sendUdpData(uint8_t *, int);
 int receiveUdpPacket(char *);
 

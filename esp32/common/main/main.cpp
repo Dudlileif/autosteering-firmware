@@ -102,8 +102,6 @@ void mainLoop()
         attemptToUpdate();
     }
 
-    bool clientsAlive = checkHeartbeats();
-
     checkWiFiStatus();
 
     if (!uploadingFile && !priorityMessageInProgress)
