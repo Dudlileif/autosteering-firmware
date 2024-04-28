@@ -219,3 +219,17 @@ void WiFiConfig::printToStreamPretty(Stream *stream)
 
     serializeJsonPretty(json(), *stream);
 }
+
+bool WiFiConfig::hasKnownNetworks()
+{
+    bool networksKnown = false;
+    for (int i = 0; i < 5; i++)
+    {
+        if (strlen(ssid[i]) > 0)
+        {
+            networksKnown = true;
+            break;
+        }
+    }
+    return networksKnown;
+}

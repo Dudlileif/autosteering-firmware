@@ -59,7 +59,7 @@ void attemptToUpdate()
             Serial.println("ESP was NOT updated");
         }
     }
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
     // Update Teensy
     else if (updateFileName.endsWith(".hex"))
     {
@@ -190,7 +190,7 @@ bool attemptToUpdateSelf(const String &fileName)
     return false;
 }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
 {
     priorityMessageInProgress = true;

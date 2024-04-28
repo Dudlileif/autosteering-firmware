@@ -23,7 +23,7 @@
 #include "../Network/Network.h"
 #include "../OTAUpdate/OTAUpdate.h"
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 #include "../TeensyComms/TeensyComms.h"
 #endif
 
@@ -185,16 +185,25 @@ String humanReadableSize(const size_t bytes)
     return String(bytes / 1024.0 / 1024.0 / 1024.0) + " GB";
 }
 
+String titleReplacer()
+{
+#ifdef BASE_STATION_RELAY
+  return String("Base Station");
+#endif
+#ifdef AUTOSTEERING_BRIDGE
+  return String("Tractor Autosteering");
+#endif
+#ifdef AUTOSTEERING_REMOTE_CONTROL
+  return String("Tractor Remote Control");
+#endif
+  return String("Firmware type missing!");
+}
+
 String networkProcessor(const String &var)
 {
   if (var == "TITLE")
   {
-#ifdef BASE_STATION_RELAY
-    return String("Base Station");
-#endif
-#ifndef BASE_STATION_RELAY
-    return String("Tractor Autosteering");
-#endif
+    return titleReplacer();
   }
   if (var == "NETWORK_CONFIG_PLACEHOLDER")
   {
@@ -235,12 +244,9 @@ String networkProcessor(const String &var)
   {
     return wifiConfig.startInAPMode ? "checked" : "";
   }
+#ifdef BASE_STATION_RELAY
   if (var == "BASE_STATION_RELAY")
   {
-#ifndef BASE_STATION_RELAY
-    return String();
-#endif
-#ifdef BASE_STATION_RELAY
     String form = R"(
       <h3>RTKBase station address</h3>
       <form action="/update_network_config_local">
@@ -262,8 +268,8 @@ String networkProcessor(const String &var)
       )";
     form.replace("%VALUE%", wifiConfig.rtkBaseStationAddress);
     return form;
-#endif
   }
+#endif
   if (var == "NETWORK_PORTS_PLACEHOLDER")
   {
     String form;
@@ -300,7 +306,7 @@ String listFiles(bool ishtml)
         {
           returnText += "<td><button onclick=\"installDownloadDeleteButton(\'" + fileName + "\', \'install\')\">Install on ESP</button>";
         }
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
         else if (fileName.endsWith(".hex") && foundfile.size() > 0)
         {
           returnText += "<td><button onclick=\"installDownloadDeleteButton(\'" + fileName + "\', \'install\')\">Install on Teensy</button>";
@@ -330,19 +336,14 @@ String firmwareProcessor(const String &var)
 {
   if (var == "TITLE")
   {
-#ifdef BASE_STATION_RELAY
-    return String("Base Station");
-#endif
-#ifndef BASE_STATION_RELAY
-    return String("Tractor Autosteering");
-#endif
+    return titleReplacer();
   }
   if (var == "TEENSY_VERSION_SEGMENT")
   {
 #ifdef BASE_STATION_RELAY
     return String();
 #endif
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
     return String(R"rawliteral(
       <br>
       Teensy: <span id="teensy_version">%TEENSY_FIRMWARE_VERSION%</span>
@@ -351,10 +352,10 @@ String firmwareProcessor(const String &var)
   }
   if (var == "ESP_FIRMWARE_VERSION")
   {
-    return String(FIRMWARE_TYPE)+String("_")+String(VERSION);
+    return String(FIRMWARE_TYPE) + String("_") + String(VERSION);
   }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
   if (var == "TEENSY_FIRMWARE_VERSION")
   {
     return teensyFirmwareVersion;
@@ -364,7 +365,7 @@ String firmwareProcessor(const String &var)
   return String();
 }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 String microStepsForm(uint16_t value)
 {
   String entry = R"=====(<input type = "radio" name = "MICRO_STEPS" id = "%VALUE%" value = "%VALUE%" %CHECKED%>
@@ -409,7 +410,7 @@ String checkboxForm(String label, String name, String id, bool checked, String f
   return form;
 }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 String motorProcessor(const String &var)
 {
   if (var == "MOTOR_CONFIG_PLACEHOLDER")
@@ -551,12 +552,16 @@ String uptimeMsToString(long uptimeMs)
 
 String statusProcessor(const String &var)
 {
+  if (var == "TITLE")
+  {
+    return titleReplacer();
+  }
   if (var == "ESP_UPTIME")
   {
     return uptimeMsToString(millis());
   }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
   if (var == "TEENSY_CRASH_REPORT")
   {
     if (teensyCrashReport.isEmpty())
@@ -782,7 +787,7 @@ void onFoundNetworks(AsyncWebServerRequest *request)
   request->send(200, "application/json", response);
 }
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 void onUpdateMotorConfig(AsyncWebServerRequest *request)
 {
   Serial.println("Received motor config update");
@@ -1032,23 +1037,16 @@ String mainProcessor(const String &var)
 {
   if (var == "TITLE")
   {
-#ifdef BASE_STATION_RELAY
-    return String("Base Station");
-#endif
-#ifndef BASE_STATION_RELAY
-    return String("Tractor Autosteering");
-#endif
+    return titleReplacer();
   }
   if (var == "IP_ADDRESS")
   {
     return getIPAddress().toString();
   }
+#ifdef AUTOSTEERING_BRIDGE
   if (var == "MOTOR")
   {
-#ifdef BASE_STATION_RELAY
-    return String();
-#endif
-#ifndef BASE_STATION_RELAY
+
     return String(R"(<tr>
                 <td>
                     <form action="/motor">
@@ -1059,8 +1057,8 @@ String mainProcessor(const String &var)
                     <br>
                 </td>
             </tr>)");
-#endif
   }
+#endif
   return String();
 }
 
@@ -1084,7 +1082,7 @@ void startWebServer()
 
   webServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
-#ifndef BASE_STATION_RELAY  
+#ifdef AUTOSTEERING_BRIDGE  
                 bool success = getTeensyUptime(true);
 #endif
                 request->send_P(200, "text/html", status_html, statusProcessor); });
@@ -1121,7 +1119,7 @@ void startWebServer()
                   serializeJson(doc, response);
                   request->send(200, "application/json", response); });
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
   webServer->on("/motor", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send_P(200, "text/html", motor_html, motorProcessor); });
 

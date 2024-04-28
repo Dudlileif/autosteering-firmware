@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware. If not, see https://www.gnu.org/licenses/.
 
-#ifdef BASE_STATION_RELAY
+#ifndef AUTOSTEERING_BRIDGE
 const char status_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>
 
 <head>
-    <title>Base Station</title>
+    <title>%TITLE%</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <style>
@@ -46,7 +46,7 @@ const char status_html[] PROGMEM = R"rawliteral(
 
 <body>
     <div class="content">
-        <h2>Base Station</h2>
+        <h2>%TITLE%</h2>
         <form action="/">
             <button type="submit">
                 <h3>Menu</h3>
@@ -120,7 +120,7 @@ const char status_html[] PROGMEM = R"rawliteral(
 )rawliteral";
 #endif
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 const char status_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>

@@ -29,10 +29,16 @@
 #define DEFAULT_RTK_BASE_STATION_ADDRESS "pirtkbase.local"
 #endif
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 #define DEFAULT_HOSTNAME "autosteering"
 #define DEFAULT_AP_SSID "Tractor Autosteering AP"
 #define DEFAULT_AP_PASSWORD "tractor-autosteering"
+#endif
+
+#ifdef AUTOSTEERING_REMOTE_CONTROL
+#define DEFAULT_HOSTNAME "autosteering-remote-control"
+#define DEFAULT_AP_SSID "Tractor Remote Control AP"
+#define DEFAULT_AP_PASSWORD "tractor-remote-control"
 #endif
 
 #define WIFI_CONFIG_FILE "/wifi_config"
@@ -82,6 +88,7 @@ public:
     bool save(FS *fs);
     void printToStream(Stream *stream);
     void printToStreamPretty(Stream *stream);
+    bool hasKnownNetworks();
 };
 
 #endif

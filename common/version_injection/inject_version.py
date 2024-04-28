@@ -43,8 +43,10 @@ if dev_build:
     print("Dev version:", version) 
 
 build_flags: list[str] = env["BUILD_FLAGS"]
-build_flags.append("-D VERSION='\"{}\"'".format(version))
-build_flags.append("-D BUILD_TIMESTAMP='\"{}\"'".format(datetime.datetime.now().isoformat()))
+build_flags.insert(0, "-D VERSION='\"{}\"'".format(version))
+build_flags.insert(
+    1, "-D BUILD_TIMESTAMP='\"{}\"'".format(datetime.datetime.now().isoformat())
+)
 
 env["BUILD_FLAGS"] = build_flags
 

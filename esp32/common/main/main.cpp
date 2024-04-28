@@ -29,7 +29,7 @@
 #include "../GnssComms/GnssComms.h"
 #endif
 
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
 #include "../TeensyComms/TeensyComms.h"
 #endif
 
@@ -65,7 +65,7 @@ void mainSetup()
     GNSS_SERIAL.setRxBufferSize(1024);
     GNSS_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
 #endif
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
     TEENSY_SERIAL.setRxBufferSize(512);
     TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
     motorConfig.loadFromFile(&LittleFS);
@@ -109,16 +109,11 @@ void mainLoop()
 #ifdef BASE_STATION_RELAY
         receiveGNSSData();
 #endif
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
         uint8_t buffer[512];
         int serialSize = readTeensySerial(buffer);
         if (serialSize > 0)
         {
-            // for (int i = 0; i < serialSize; i++)
-            // {
-            //   Serial.print((char)buffer[i]);
-            // }
-            // Serial.println();
             sendUdpData(buffer, serialSize);
         }
 

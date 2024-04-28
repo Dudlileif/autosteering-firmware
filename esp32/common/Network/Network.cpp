@@ -116,7 +116,7 @@ static void handleData(void *, AsyncClient *, void *data, size_t len)
 #ifdef BASE_STATION_RELAY
     GNSS_SERIAL.write((char *)data, len);
 #endif
-#ifndef BASE_STATION_RELAY
+#ifdef AUTOSTEERING_BRIDGE
     TEENSY_SERIAL.write((char *)data, len);
 #endif
 }
@@ -189,8 +189,8 @@ void checkWiFiStatus()
             {
                 if (!clientsAlive)
                 {
-                    Serial.printf("Sending identifier message to: %s:%d", WiFi.gatewayIP().toString().c_str(), wifiConfig.udpSendPort);
-                    sendUdpPacket("Steering hardware", 18, WiFi.gatewayIP(), wifiConfig.udpSendPort);
+                    Serial.printf("Sending identifier message to: %s:%d\n", WiFi.gatewayIP().toString().c_str(), wifiConfig.udpSendPort);
+                    sendUdpPacket("Remote control", 15, WiFi.gatewayIP(), wifiConfig.udpSendPort);
                 }
                 hardwareIdentifierSendTime = millis();
             }
@@ -207,7 +207,7 @@ void checkWiFiStatus()
     }
     else if (WiFi.getMode() == WIFI_MODE_AP || WiFi.getMode() == WIFI_MODE_APSTA)
     {
-        if (!wifiConfig.startInAPMode)
+        if (!wifiConfig.startInAPMode && wifiConfig.hasKnownNetworks())
         {
             if (wifiMulti.run(5000) == WL_CONNECTED)
             {
@@ -427,26 +427,8 @@ int receiveUdpPacket(char *udpPacketBuffer)
 
         size = receiveUDP.read(udpPacketBuffer, size);
 
-#ifndef BASE_STATION_RELAY
+#if defined(AUTOSTEERING_BRIDGE) || defined(AUTOSTEERING_REMOTE_CONTROL)
         updateDestinations();
-
-        // if (strstr(udpPacketBuffer, "Use me as Ntrip server!"))
-        // {
-        //     IPAddress sender = receiveUDP.remoteIP();
-        //     if (tcpClient != nullptr)
-        //     {
-        //         tcpClient->close();
-        //         tcpClient = nullptr;
-        //     }
-        //     *tcpClient=AsyncClient();
-
-        //     tcpClient->connect(sender, wifiConfig.tcpSendPort);
-        //     tcpClient->write("Connection from ESP32.");
-        //     Serial.print("Connected to TCP server: ");
-        //     Serial.print(sender);
-        //     Serial.print(":");
-        //     Serial.println(wifiConfig.tcpSendPort);
-        // }
 #endif
     }
     return size;
@@ -454,11 +436,13 @@ int receiveUdpPacket(char *udpPacketBuffer)
 
 IPAddress getIPAddress()
 {
-    if (WiFi.getMode() == WIFI_MODE_AP)
+    IPAddress local = WiFi.localIP();
+
+    if (local.toString() == "0.0.0.0")
     {
         return WiFi.softAPIP();
     }
-    return WiFi.localIP();
+    return local;
 }
 
 void checkSendLED()

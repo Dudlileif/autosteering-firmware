@@ -34,9 +34,9 @@ def copy_built_file_to_parent_dir(source, target, env):
         .replace('"', "")
     )
 
-    version: str = env["BUILD_FLAGS"][2].split("='\"")[1].split("\"'")[0]
+    version: str = env["BUILD_FLAGS"][0].split("='\"")[1].split("\"'")[0]
 
-    build_timestamp: str = env["BUILD_FLAGS"][3].split("='\"")[1].split("\"'")[0]
+    build_timestamp: str = env["BUILD_FLAGS"][1].split("='\"")[1].split("\"'")[0]
 
     for file in os.listdir(os.path.join(env["PROJECT_DIR"], "../builds/")):
         if file.startswith(firmware_type):

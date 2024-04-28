@@ -9,6 +9,10 @@
 			"path": "../esp32/autosteering_bridge"
 		},
 		{
+			"name": "autosteering_remote_control",
+			"path": "../esp32/autosteering_remote_control"
+		},
+		{
 			"name": "teensy",
 			"path": "../teensy"
 		},
@@ -41,7 +45,8 @@
 			"system_error": "cpp",
 			"fstream": "cpp",
 			"atomic": "cpp",
-			"sstream": "cpp"
+			"sstream": "cpp",
+			"cstring": "cpp"
 		}
 		,
 		"licenser.author": "Gaute Hagen",

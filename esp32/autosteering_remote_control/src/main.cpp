@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "webpage_firmware.h"
-#include "webpage_main.h"
-#include "webpage_network.h"
-#ifdef AUTOSTEERING_BRIDGE
-#include "webpage_motor.h"
+#ifndef _MAIN_CPP
+#define _MAIN_CPP
+
+#include <main.h>
+
+void setup() { mainSetup(); }
+void loop() { mainLoop(); }
 #endif
-#include "webpage_status.h"
