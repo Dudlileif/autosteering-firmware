@@ -14,11 +14,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
-
+#ifdef AUTOSTEERING_BRIDGE
 #include "TeensyComms.h"
 
-#include "../Config/Config.h"
-#include "../OTAUpdate/OTAUpdate.h"
+#include <Config.h>
+#include <OTAUpdate.h>
+#include "../TeensyOTAUpdateAdditions/TeensyOTAUpdateAdditions.h"
 
 MotorConfig motorConfig;
 
@@ -218,3 +219,4 @@ void checkIfTeensyIsResponding()
         teensyUnresponsive = false;
     }
 }
+#endif

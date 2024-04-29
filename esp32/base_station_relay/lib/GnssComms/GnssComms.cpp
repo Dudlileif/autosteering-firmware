@@ -1,6 +1,6 @@
 #include "GnssComms.h"
-#include <../Config/Config.h>
-#include <../Network/Network.h>
+#include <Config.h>
+#include <Network.h>
 
 const int N = 4096;
 uint8_t ubxBuffer[N];

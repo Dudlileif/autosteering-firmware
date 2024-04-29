@@ -25,30 +25,16 @@
 
 #include "../Config/Config.h"
 
-#ifdef BASE_STATION_RELAY
-#include "../GnssComms/GnssComms.h"
-#endif
-
-#ifdef AUTOSTEERING_BRIDGE
-#include "../TeensyComms/TeensyComms.h"
-#endif
-
 #include "../WebServer/WebServer.h"
 #include "../OTAUpdate/OTAUpdate.h"
 #include "../Network/Network.h"
 
 void mainSetup()
 {
-    pinMode(PRIORITY_MESSAGE_SIGNAL_PIN, OUTPUT);
     pinMode(WIFI_LED_R, OUTPUT);
     pinMode(WIFI_LED_G, OUTPUT);
     pinMode(WIFI_LED_B, OUTPUT);
     pinMode(SEND_LED_PIN, OUTPUT);
-#ifdef BASE_STATION_RELAY
-    pinMode(GNSS_READ_FAIL_LED_PIN, OUTPUT);
-#endif
-
-    digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
 
     mountFileSystem();
 
@@ -61,28 +47,8 @@ void mainSetup()
 
     Serial.println("Saved WiFi config json:");
     wifiConfig.printToStreamPretty(&Serial);
-#ifdef BASE_STATION_RELAY
-    GNSS_SERIAL.setRxBufferSize(1024);
-    GNSS_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
-#endif
-#ifdef AUTOSTEERING_BRIDGE
-    TEENSY_SERIAL.setRxBufferSize(512);
-    TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
-    motorConfig.loadFromFile(&LittleFS);
 
-    Serial.println("Saved Motor config json:");
-    motorConfig.printToStreamPretty(&Serial);
-
-    delay(100);
-
-    sendMotorConfig();
-
-    getTeensyCrashReport(true);
-
-    getTeensyFirmwareVersion(true);
-#endif
-
-    if (wifiConfig.startInAPMode || strlen(wifiConfig.ssid[0]) == 0)
+    if (wifiConfig.startInAPMode || !wifiConfig.hasKnownNetworks())
     {
         startWiFiAP();
     }
@@ -95,7 +61,7 @@ void mainSetup()
     startWebServer();
 }
 
-void mainLoop()
+bool mainLoop()
 {
     if (doUpdate)
     {
@@ -106,29 +72,9 @@ void mainLoop()
 
     if (!uploadingFile && !priorityMessageInProgress)
     {
-#ifdef BASE_STATION_RELAY
-        receiveGNSSData();
-#endif
-#ifdef AUTOSTEERING_BRIDGE
-        uint8_t buffer[512];
-        int serialSize = readTeensySerial(buffer);
-        if (serialSize > 0)
-        {
-            sendUdpData(buffer, serialSize);
-        }
-
-        // UDP maxes out at 1460
-        char udpPacketBuffer[1460];
-
-        int udpPacketSize = receiveUdpPacket(udpPacketBuffer);
-        if (udpPacketSize > 0)
-        {
-            TEENSY_SERIAL.write(udpPacketBuffer, udpPacketSize);
-        }
-
-        checkIfTeensyIsResponding();
-#endif
+        return true;
     }
+    return false;
 }
 
 #endif

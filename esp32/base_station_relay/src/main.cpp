@@ -19,7 +19,22 @@
 #define _MAIN_CPP
 
 #include "main.h"
-void setup() { mainSetup(); }
+#include "GnssComms.h"
+#include <Config.h>
 
-void loop() { mainLoop(); }
+void setup()
+{
+    pinMode(GNSS_READ_FAIL_LED_PIN, OUTPUT);
+    mainSetup();
+    GNSS_SERIAL.setRxBufferSize(1024);
+    GNSS_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
+}
+
+void loop()
+{
+    if (mainLoop())
+    {
+        receiveGNSSData();
+    }
+}
 #endif

@@ -19,6 +19,7 @@
 #define _MY_WEBSERVER_H
 
 #include <ESPAsyncWebServer.h>
+#include "web_pages/web_pages.h"
 
 extern AsyncWebServer *webServer;
 
@@ -31,12 +32,6 @@ void onFile(AsyncWebServerRequest *request);
 void onUpdateNetworkConfig(AsyncWebServerRequest *request);
 void onUpdateNetworkConfigLocal(AsyncWebServerRequest *request);
 void onUpdateNetworkConfigRemote(AsyncWebServerRequest *request);
-
-#ifdef AUTOSTEERING_BRIDGE
-void onUpdateMotorConfig(AsyncWebServerRequest *request);
-void onUpdateMotorConfigLocal(AsyncWebServerRequest *request);
-void onUpdateMotorConfigRemote(AsyncWebServerRequest *request);
-#endif
 
 void onFileUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
 
@@ -52,6 +47,10 @@ String numberForm(String label, String name, String id, int32_t minValue, uint32
 
 String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue);
 String numberForm(String label, String name, String id, float minValue, float maxValue, float increment, float initialValue, String description);
+
+String checkboxForm(String label, String name, String id, bool checked, String function, String description);
+
+String titleReplacer();
 
 String humanReadableSize(const size_t bytes);
 

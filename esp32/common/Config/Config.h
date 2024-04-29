@@ -22,23 +22,31 @@
 
 // If using ESP32-WROVER module, pins 6-11, 16 and 17 are already in use by the extended
 // memory.
+#define FORMAT_LITTLEFS_IF_FAILED true
 
+#if defined(AUTOSTEERING_BRIDGE) || defined(BASE_STATION_RELAY)
 #define RXD2 2
 #define TXD2 4
 
 #define TEENSY_SERIAL Serial2 // Pins: RX: 2, TX: 4
 #define GNSS_SERIAL Serial2   // Pins: RX: 2, TX: 4
-
-#define FORMAT_LITTLEFS_IF_FAILED true
-
 const int PRIORITY_MESSAGE_SIGNAL_PIN = 23;
-
 const int WIFI_LED_R = 18;
 const int WIFI_LED_G = 21;
 const int WIFI_LED_B = 19;
 const int SEND_LED_PIN = 5;
-
 const int GNSS_READ_FAIL_LED_PIN = 27;
+#endif
+
+#ifdef AUTOSTEERING_REMOTE_CONTROL
+const int REMOTE_BUTTON_1 = 26;
+const int REMOTE_BUTTON_2 = 18;
+const int REMOTE_BUTTON_3 = 5;
+const int WIFI_LED_R = 21;
+const int WIFI_LED_G = 22;
+const int WIFI_LED_B = 19;
+const int SEND_LED_PIN = 2;
+#endif
 
 const uint SEND_LED_ON_MS = 250;
 

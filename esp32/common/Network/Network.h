@@ -62,6 +62,7 @@ void sendUdpPacket(uint8_t *, int, IPAddress, uint);
 void sendUdpPacket(uint8_t *, int, char *, uint);
 void sendUdpPacket(const char *, int, IPAddress, uint);
 void sendUdpData(uint8_t *, int);
+void sendUdpData(const char *, int);
 int receiveUdpPacket(char *);
 
 void checkSendLED();

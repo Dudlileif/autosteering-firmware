@@ -34,6 +34,8 @@ uint32_t sendLEDStartTime = 0;
 
 uint32_t hardwareIdentifierSendTime = 0;
 
+uint32_t lastAPConnectedDeviceDisconnectTime = 0;
+
 void setWiFiLED(color_t color)
 {
     analogWrite(WIFI_LED_R, color.red);
@@ -207,7 +209,8 @@ void checkWiFiStatus()
     }
     else if (WiFi.getMode() == WIFI_MODE_AP || WiFi.getMode() == WIFI_MODE_APSTA)
     {
-        if (!wifiConfig.startInAPMode && wifiConfig.hasKnownNetworks())
+        uint connected = WiFi.softAPgetStationNum();
+        if (!wifiConfig.startInAPMode && wifiConfig.hasKnownNetworks() && connected < 1 && millis() - lastAPConnectedDeviceDisconnectTime > 5000)
         {
             if (wifiMulti.run(5000) == WL_CONNECTED)
             {
@@ -215,7 +218,6 @@ void checkWiFiStatus()
             }
         }
         static uint prevConnected = 0;
-        uint connected = WiFi.softAPgetStationNum();
         if (connected < 1)
         {
             setWiFiLED(colorPink);
@@ -233,6 +235,7 @@ void checkWiFiStatus()
             if (connected < 1)
             {
                 setWiFiLED(colorYellow);
+                lastAPConnectedDeviceDisconnectTime = millis();
             }
             else
             {
@@ -419,14 +422,23 @@ void sendUdpData(uint8_t *buffer, int messageSize)
     }
 }
 
+void sendUdpData(const char *buffer, int messageSize)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        if (destinations[i].heartbeat != 0)
+        {
+            sendUdpPacket(buffer, messageSize, destinations[i].ip, wifiConfig.udpSendPort);
+        }
+    }
+}
+
 int receiveUdpPacket(char *udpPacketBuffer)
 {
     int size = receiveUDP.parsePacket();
     if (size > 0)
     {
-
         size = receiveUDP.read(udpPacketBuffer, size);
-
 #if defined(AUTOSTEERING_BRIDGE) || defined(AUTOSTEERING_REMOTE_CONTROL)
         updateDestinations();
 #endif

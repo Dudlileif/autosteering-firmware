@@ -19,7 +19,62 @@
 #define _MAIN_CPP
 
 #include <main.h>
+#include <Network.h>
+#include <LittleFS.h>
+#include <WebServer.h>
+#include <OTAUpdate.h>
+#include "TeensyComms/TeensyComms.h"
+#include "TeensyOTAUpdateAdditions/TeensyOTAUpdateAdditions.h"
+#include "TeensyWebServerAdditions/TeensyWebServerAddtions.h"
 
-void setup() { mainSetup(); }
-void loop() { mainLoop(); }
+void setup()
+{
+    pinMode(PRIORITY_MESSAGE_SIGNAL_PIN, OUTPUT);
+    digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
+    mainSetup();
+    addTeensyCallbacksToWebServer();
+
+    TEENSY_SERIAL.setRxBufferSize(512);
+    TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
+    motorConfig.loadFromFile(&LittleFS);
+
+    Serial.println("Saved Motor config json:");
+    motorConfig.printToStreamPretty(&Serial);
+
+    delay(100);
+
+    sendMotorConfig();
+
+    getTeensyCrashReport(true);
+
+    getTeensyFirmwareVersion(true);
+}
+
+void loop()
+{
+    if (doUpdate && updateFileName.endsWith(".hex"))
+    {
+        attemptTeensyUpdate();
+    }
+    if (mainLoop())
+    {
+        uint8_t buffer[512];
+        int serialSize = readTeensySerial(buffer);
+        if (serialSize > 0)
+        {
+            sendUdpData(buffer, serialSize);
+        }
+
+        // UDP maxes out at 1460
+        char udpPacketBuffer[1460];
+
+        int udpPacketSize = receiveUdpPacket(udpPacketBuffer);
+        if (udpPacketSize > 0)
+        {
+            TEENSY_SERIAL.write(udpPacketBuffer, udpPacketSize);
+        }
+
+        checkIfTeensyIsResponding();
+    }
+}
 #endif

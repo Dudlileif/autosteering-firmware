@@ -15,31 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef OTAUPDATE_H
-#define OTAUPDATE_H
-
+#ifndef TEENSYOTAUPDATEADDITIONS_H
+#define TEENSYOTAUPDATEADDITIONS_H
 #include <Arduino.h>
+extern String teensyFirmwareVersion;
 
-#define FORMAT_LITTLEFS_IF_FAILED true
-
-extern bool priorityMessageInProgress;
-
-extern bool doUpdate;
-
-extern String updateFileName;
-void mountFileSystem();
-
-void attemptToUpdate();
-
-bool attemptToUpdateSelf(const String &);
-
-bool performUpdate(Stream &updateSource, size_t updateSize);
-
-#ifdef AUTOSTEERING_BRIDGE
-
-bool attemptToUpdateTeensy(const String &);
-
-bool performTeensyUpdate(Stream &updateSource, size_t updateSize);
-#endif
+void attemptTeensyUpdate();
 
 #endif

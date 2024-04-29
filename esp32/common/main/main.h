@@ -16,4 +16,4 @@
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
 void mainSetup();
-void mainLoop();
+bool mainLoop();
