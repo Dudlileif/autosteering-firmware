@@ -39,15 +39,17 @@ const int numButtons = 3;
 struct Button
 {
     const uint8_t pin;
+    const uint8_t ledPin;
     bool pressed;
     bool released;
     bool receivedState;
+    bool ledState;
     uint32_t lastTriggerTime;
 };
 
-volatile Button buttons[] = {{REMOTE_BUTTON_1, false, true, false, 0},
-                             {REMOTE_BUTTON_2, false, true, false, 0},
-                             {REMOTE_BUTTON_3, false, true, false, 0}};
+volatile Button buttons[] = {{REMOTE_BUTTON_1, REMOTE_STATE_LED_1, false, true, false, LOW, 0},
+                             {REMOTE_BUTTON_2, REMOTE_STATE_LED_2, false, true, false, LOW, 0},
+                             {REMOTE_BUTTON_3, REMOTE_STATE_LED_3, false, true, false, LOW, 0}};
 
 void IRAM_ATTR button1Trigger()
 {
@@ -135,6 +137,14 @@ void receiveUdpMessage()
                 }
                 lastButtonStateReceiveTime = millis();
             }
+            if (message.containsKey("remote_states"))
+            {
+                JsonArray remoteStates = message["remote_states"];
+                for (int i = 0; i < remoteStates.size(); i++)
+                {
+                    buttons[i].ledState = remoteStates[i];
+                }
+            }
         }
     }
 }
@@ -144,6 +154,7 @@ void setup()
     for (int i = 0; i < numButtons; i++)
     {
         pinMode(buttons[i].pin, INPUT_PULLUP);
+        pinMode(buttons[i].ledPin, OUTPUT);
     }
     attachInterrupt(buttons[0].pin, button1Trigger, CHANGE);
     attachInterrupt(buttons[1].pin, button2Trigger, CHANGE);
@@ -156,6 +167,10 @@ void loop()
 {
     if (mainLoop())
     {
+        for (int i = 0; i < numButtons; i++)
+        {
+            digitalWrite(buttons[i].ledPin, buttons[i].ledState);
+        }
         uint32_t now = millis();
         if (now - lastButtonStateSendTime > minSendPeriod)
         {
