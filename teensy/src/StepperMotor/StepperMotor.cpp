@@ -27,6 +27,7 @@ PidController pidController;
 
 bool motorEnabled = false;
 bool motorCalibration = false;
+bool motorStalled = false;
 
 uint16_t wasTarget = 0;
 
@@ -59,6 +60,23 @@ void stepperInit()
 
     stepper.begin(); // Start SPI connection with driver
     stepper.setSPISpeed(4000000);
+
+    updateStepperDriverConfig();
+
+    Serial.println("Stepper initialized.");
+    restartStepper();
+}
+
+void initPidController()
+{
+    pidController.clear();
+    pidController.p = motorConfig.pidP;
+    pidController.i = motorConfig.pidI;
+    pidController.d = motorConfig.pidD;
+}
+
+void updateStepperDriverConfig()
+{
     stepper.toff(motorConfig.TOFF);                       // Enable the driver with toff > 0
     stepper.microsteps(motorConfig.MICRO_STEPS);          // Set MICRO_STEPS
     stepper.hold_multiplier(motorConfig.hold_multiplier); // 0..1, multiplier to get IHOLD from IRUN.
@@ -113,13 +131,9 @@ void stepperInit()
     stepper.dc_time(motorConfig.DC_TIME);
     stepper.dc_sg(motorConfig.DC_SG);
 
-    pidController.clear();
-    pidController.p = motorConfig.pid_P;
-    pidController.i = motorConfig.pid_I;
-    pidController.d = motorConfig.pid_D;
+    initPidController();
 
-    Serial.println("Stepper initialized.");
-    restartStepper();
+    Serial.println("Updated stepper driver config");
 }
 
 int32_t positionFromRotations(float rotations)
@@ -177,8 +191,12 @@ void restartStepper()
     pidController.clear();
     stepper.toff(0);
     stepper.sg_stop(0);
+    delay(10);
     stepper.sg_stop(motorConfig.sg_stop);
     stepper.toff(motorConfig.TOFF);
+
+    motorStalled = false;
+
     Serial.println("Stepper restarted.");
 }
 
@@ -213,11 +231,14 @@ void handleMotorControls(JsonDocument &document)
     }
     else
     {
+        if (motorEnabled)
+        {
+            Serial.println("Motor stopped.");
+        }
         motorCalibration = false;
         motorEnabled = false;
-        Serial.println("Motor stopped.");
-        char message[] = "{\"motor_enabled\": false}";
-        sendToProgram(message, sizeof(message));
+        // char message[] = "{\"motor_enabled\":false}";
+        // sendToProgram(message, sizeof(message));
     }
     stepperLastCommandElapsedTime = 0;
 }
@@ -238,10 +259,24 @@ float normalizeWasReading(uint16_t reading)
     return constrain(normalizedWasReading, 0.0, 1.0);
 }
 
+float shorterRangeCoefficient(uint16_t reading)
+{
+    float leftSide = float(motorConfig.wasCenter - motorConfig.wasMin);
+    float rightSide = float(motorConfig.wasMax - motorConfig.wasCenter);
+    if (reading < motorConfig.wasCenter && leftSide < rightSide)
+    {
+        return leftSide / rightSide;
+    }
+    else if (reading > motorConfig.wasCenter && rightSide < leftSide)
+    {
+        return rightSide / leftSide;
+    }
+    return 1;
+}
+
 void updateStepper()
 {
-    digitalWrite(MOTOR_ENABLE_PIN, !motorEnabled);
-
+    digitalWrite(MOTOR_ENABLE_PIN, motorEnabled);
     if (stepperLastCommandElapsedTime > STEPPER_COMMAND_UPDATE_US)
     {
         if (motorEnabled)
@@ -261,18 +296,19 @@ void updateStepper()
         stepperCurrentScale = stepper.cs_actual();
         stepperRPMActual = rpmFromVelocity(stepper.VACTUAL());
         stepperPositionActual = stepper.XACTUAL();
+
         if (motorEnabled)
         {
             float normalizedReading = normalizeWasReading(wasReading);
 
-            if (stepper.stallguard())
+            if (abs(stepperRPMActual) > motorConfig.TCOOLTHRS_RPM && stepper.stallguard() && !motorStalled)
             {
                 Serial.println("Motor stalled!");
                 motorEnabled = false;
-                char message[26] = "{\"motor_stalled\": true}";
-                sendToProgram(message, sizeof(message));
-                stallElapsedtime = 0;
-                stepper.VMAX(0);
+                // char message[26] = "{\"motor_stalled\": true}";
+                // sendToProgram(message, sizeof(message));
+                stallElapsedTime = 0;
+                motorStalled = true;
             }
             else
             {
@@ -292,12 +328,14 @@ void updateStepper()
                             calibrationTarget = 0;
                         }
                     }
-                    velocityGain = constrain(pidController.next(calibrationTarget - normalizedReading), -1, 1);
+                    velocityGain = constrain(pidController.next(calibrationTarget - normalizedReading), -1, 1) * shorterRangeCoefficient(wasReading);
                 }
                 else
                 {
+
                     float normalizedTarget = normalizeWasReading(wasTarget);
-                    velocityGain = constrain(pidController.next(normalizedTarget - normalizedReading), -1, 1);
+                    float pidValue = pidController.next(normalizedTarget - normalizedReading);
+                    velocityGain = constrain(pidValue, -1, 1) * shorterRangeCoefficient(wasReading);
                 }
                 stepperVMax = abs(velocityGain) * velocityFromRPM(motorConfig.VMAX_RPM);
                 StepperRampMode mode = velocityGain >= 0 ? positive : negative;

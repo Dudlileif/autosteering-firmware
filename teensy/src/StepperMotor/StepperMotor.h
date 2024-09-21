@@ -30,6 +30,7 @@ extern MotorConfig motorConfig;
 extern PidController pidController;
 
 extern bool motorEnabled;
+extern bool motorStalled;
 extern bool motorCalibration;
 
 enum StepperRampMode
@@ -51,6 +52,8 @@ extern uint8_t stepperCurrentScale;
 extern TMC5160Stepper stepper;
 
 void stepperInit();
+
+void updateStepperDriverConfig();
 
 int32_t positionFromRotations(float rotations);
 
