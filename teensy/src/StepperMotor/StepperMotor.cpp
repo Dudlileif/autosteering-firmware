@@ -51,9 +51,7 @@ const float t_acc = 0.015271; // pow(2, 41) / pow(f_clk, 2)
 // On TMC5160 BOB                          CSN   (r_sense, ohm)  SDI           SDO           SCK    (link_address)
 TMC5160Stepper stepper = TMC5160Stepper(PIN_SPI_SS1, 0.075, PIN_SPI_MOSI1, PIN_SPI_MISO1, PIN_SPI_SCK1, -1);
 
-elapsedMicros stallElapsedtime;
-
-// TODO: implement PID, send was targets instead of motor rpm
+elapsedMicros stallElapsedTime;
 
 void stepperInit()
 {
@@ -79,11 +77,11 @@ void stepperInit()
     // Ramp acceleration and speed config
     stepper.VSTART(motorConfig.VSTART);
     stepper.VSTOP(motorConfig.VSTOP);
-    stepper.AMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
-    stepper.DMAX(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2));
+    stepper.AMAX(accelerationFromRPMS(motorConfig.AMAX_RPM_S));
+    stepper.DMAX(accelerationFromRPMS(motorConfig.AMAX_RPM_S));
     stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM / 2));
-    stepper.a1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2 / 2));
-    stepper.d1(accelerationFromRPMS2(motorConfig.AMAX_RPM_S_2 / 2));
+    stepper.a1(accelerationFromRPMS(motorConfig.AMAX_RPM_S / 2));
+    stepper.d1(accelerationFromRPMS(motorConfig.AMAX_RPM_S / 2));
 
     // Sets the wait time at zero velocity after a ramp before continuing
     // to the other side of zero.
@@ -126,27 +124,27 @@ void stepperInit()
 
 int32_t positionFromRotations(float rotations)
 {
-    return round(rotations * motorConfig.MICRO_STEPS * motorConfig.STEPS_PER_ROT);
+    return round(rotations * (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS) * motorConfig.STEPS_PER_ROT);
 }
 
 float rotationsFromPosition(int32_t position)
 {
-    return float(position) / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
+    return float(position) / (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS) / motorConfig.STEPS_PER_ROT;
 }
 
 uint32_t velocityFromRPM(float rpm)
 {
-    return round(rpm / 60 * t_vel * motorConfig.MICRO_STEPS * motorConfig.STEPS_PER_ROT);
+    return round(rpm / 60 * t_vel * (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS) * motorConfig.STEPS_PER_ROT);
 }
 
 float rpmFromVelocity(int32_t velocity)
 {
-    return velocity * 60 / t_vel / motorConfig.MICRO_STEPS / motorConfig.STEPS_PER_ROT;
+    return velocity * 60 / t_vel / (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS) / motorConfig.STEPS_PER_ROT;
 }
 
 uint32_t tFromVelocity(uint32_t velocity)
 {
-    return constrain(pow(2, 24) / (velocity * 256 / motorConfig.MICRO_STEPS), 0, pow(2, 20) - 1);
+    return constrain(pow(2, 24) / (velocity * 256 / (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS)), 0, pow(2, 20) - 1);
 }
 
 uint32_t tFromRPM(float rpm)
@@ -156,7 +154,7 @@ uint32_t tFromRPM(float rpm)
 
 uint32_t velocityFromT(uint32_t t)
 {
-    return pow(2, 24) / (t * 256 / motorConfig.MICRO_STEPS);
+    return pow(2, 24) / (t * 256 / (motorConfig.MICRO_STEPS == 0 ? 1 : motorConfig.MICRO_STEPS));
 }
 
 float rpmFromT(uint32_t t)
@@ -164,12 +162,12 @@ float rpmFromT(uint32_t t)
     return rpmFromVelocity(velocityFromT(t));
 }
 
-uint32_t accelerationFromRPMS2(float rpms2)
+uint32_t accelerationFromRPMS(float rpms)
 {
-    return constrain(velocityFromRPM(rpms2) * t_acc, 0, pow(2, 16) - 1);
+    return constrain(velocityFromRPM(rpms) * t_acc, 0, pow(2, 16) - 1);
 }
 
-float rpms2FromAcceleration(uint32_t acceleration)
+float rpmsFromAcceleration(uint32_t acceleration)
 {
     return rpmFromVelocity(acceleration) / t_acc;
 }
@@ -194,10 +192,10 @@ void handleMotorControls(JsonDocument &document)
 
     if (!wasTargetPos.isNull())
     {
-        wasTarget = constrain(wasTargetPos, motorConfig.was_min, motorConfig.was_max);
+        wasTarget = constrain(wasTargetPos, motorConfig.wasMin, motorConfig.wasMax);
         if (!enableMotor.isNull())
         {
-            if (motorEnabled != enableMotor && stallElapsedtime > 5e6)
+            if (motorEnabled != enableMotor && stallElapsedTime > 5e6)
             {
                 restartStepper();
             }
@@ -228,13 +226,13 @@ float normalizeWasReading(uint16_t reading)
 {
     float normalizedWasReading = 0.5;
 
-    if (reading < motorConfig.was_center)
+    if (reading < motorConfig.wasCenter)
     {
-        normalizedWasReading = 0.5 * (reading - motorConfig.was_min) / (motorConfig.was_center - motorConfig.was_min);
+        normalizedWasReading = 0.5 * (reading - motorConfig.wasMin) / (motorConfig.wasCenter - motorConfig.wasMin);
     }
-    else if (reading > motorConfig.was_center)
+    else if (reading > motorConfig.wasCenter)
     {
-        normalizedWasReading = 0.5 + 0.5 * (reading - motorConfig.was_center) / (motorConfig.was_max - motorConfig.was_center);
+        normalizedWasReading = 0.5 + 0.5 * (reading - motorConfig.wasCenter) / (motorConfig.wasMax - motorConfig.wasCenter);
     }
 
     return constrain(normalizedWasReading, 0.0, 1.0);
@@ -303,7 +301,7 @@ void updateStepper()
                 }
                 stepperVMax = abs(velocityGain) * velocityFromRPM(motorConfig.VMAX_RPM);
                 StepperRampMode mode = velocityGain >= 0 ? positive : negative;
-                if (motorConfig.invertDirection)
+                if (motorConfig.reverseDirection)
                 {
                     mode = mode == positive ? negative : positive;
                 }
@@ -311,7 +309,7 @@ void updateStepper()
                 stepper.RAMPMODE(mode);
             }
         }
-        else if (motorCalibration && stallElapsedtime > 5e6)
+        else if (motorCalibration && stallElapsedTime > 5e6)
         {
             restartStepper();
             motorEnabled = true;

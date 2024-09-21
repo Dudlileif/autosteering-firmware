@@ -49,13 +49,13 @@ bool MotorConfig::load(Stream *stream)
         Serial.println("Motor config is empty, loading default.");
         return false;
     }
-    if (savedConfig.containsKey("invertDirection"))
+    if (savedConfig["reverseDirection"].is<bool>())
     {
-        invertDirection = savedConfig["invertDirection"];
+        reverseDirection = savedConfig["reverseDirection"];
     }
     if (savedConfig.containsKey("AMAX_RPM_S_2"))
     {
-        AMAX_RPM_S_2 = savedConfig["AMAX_RPM_S_2"];
+        AMAX_RPM_S = savedConfig["AMAX_RPM_S"];
     }
     if (savedConfig.containsKey("VMAX_RPM"))
     {
@@ -187,27 +187,27 @@ bool MotorConfig::load(Stream *stream)
     }
     if (savedConfig.containsKey("pid_P"))
     {
-        pid_P = savedConfig["pid_P"];
+        pidP = savedConfig["pid_P"];
     }
     if (savedConfig.containsKey("pid_I"))
     {
-        pid_I = savedConfig["pid_I"];
+        pidI = savedConfig["pid_I"];
     }
     if (savedConfig.containsKey("pid_D"))
     {
-        pid_D = savedConfig["pid_D"];
+        pidD = savedConfig["pid_D"];
     }
     if (savedConfig.containsKey("was_min"))
     {
-        was_min = savedConfig["was_min"];
+        wasMin = savedConfig["was_min"];
     }
     if (savedConfig.containsKey("was_center"))
     {
-        was_center = savedConfig["was_center"];
+        wasCenter = savedConfig["was_center"];
     }
     if (savedConfig.containsKey("was_max"))
     {
-        was_max = savedConfig["was_max"];
+        wasMax = savedConfig["was_max"];
     }
 
     Serial.println("Motor config loaded successfully.");
@@ -234,13 +234,13 @@ bool MotorConfig::loadFromFile(FS *fs)
 JsonDocument MotorConfig::json()
 {
     JsonDocument jsonDocument;
-    jsonDocument["invertDirection"] = invertDirection;
+    jsonDocument["reverseDirection"] = reverseDirection;
     jsonDocument["MICRO_STEPS"] = MICRO_STEPS;
     jsonDocument["STEPS_PER_ROT"] = STEPS_PER_ROT;
     jsonDocument["RMS_CURRENT"] = RMS_CURRENT;
     jsonDocument["hold_multiplier"] = hold_multiplier;
     jsonDocument["freewheel"] = freewheel;
-    jsonDocument["AMAX_RPM_S_2"] = AMAX_RPM_S_2;
+    jsonDocument["AMAX_RPM_S"] = AMAX_RPM_S;
     jsonDocument["VMAX_RPM"] = VMAX_RPM;
     jsonDocument["VSTOP"] = VSTOP;
     jsonDocument["VSTART"] = VSTART;
@@ -268,12 +268,12 @@ JsonDocument MotorConfig::json()
     jsonDocument["TBL"] = TBL;
     jsonDocument["TPOWERDOWN"] = TPOWERDOWN;
     jsonDocument["TZEROWAIT"] = TZEROWAIT;
-    jsonDocument["pid_P"] = pid_P;
-    jsonDocument["pid_I"] = pid_I;
-    jsonDocument["pid_D"] = pid_D;
-    jsonDocument["was_min"] = was_min;
-    jsonDocument["was_center"] = was_center;
-    jsonDocument["was_max"] = was_max;
+    jsonDocument["pid_P"] = pidP;
+    jsonDocument["pid_I"] = pidI;
+    jsonDocument["pid_D"] = pidD;
+    jsonDocument["was_min"] = wasMin;
+    jsonDocument["was_center"] = wasCenter;
+    jsonDocument["was_max"] = wasMax;
 
     return jsonDocument;
 }
@@ -309,7 +309,7 @@ String MotorConfig::getDescription(String key)
     {
         return "Multiplicator to get IHOLD (hold current) from IRUN (running current), set to 0 to allow freewheeling.";
     }
-    else if (key == "invertDirection")
+    else if (key == "reverseDirection")
     {
         return "Whether the motor should turn in the opposite direction.";
     }
@@ -423,7 +423,7 @@ String MotorConfig::getDescription(String key)
     }
     else if (key == "TCOOLTHRS_RPM")
     {
-        return "The lower speed threshold for enabling StallGuard and and priming CoolStep. CoolStep will enable when the speed is above than THIGH_RPM.";
+        return "The lower speed threshold for enabling StallGuard and and priming CoolStep. CoolStep will enable when the speed is above THIGH_RPM.";
     }
     else if (key == "THIGH_RPM")
     {
@@ -433,9 +433,9 @@ String MotorConfig::getDescription(String key)
     {
         return "The lower speed threshold for DcStep. The motor will stop when falling below this when heavily loaded and sg_stop is enabled.";
     }
-    else if (key == "AMAX_RPM_S_2")
+    else if (key == "AMAX_RPM_S")
     {
-        return "The maximum acceleration rate, in RPM/s^2.";
+        return "The maximum acceleration rate, in RPM/s.";
     }
     else if (key == "pid_P")
     {
@@ -451,7 +451,7 @@ String MotorConfig::getDescription(String key)
     }
     else if (key == "was_min")
     {
-        return "Minimum reading value for the WAS (usually full right turn).";
+        return "Minimum reading value for the WAS (usually full left turn).";
     }
     else if (key == "was_center")
     {

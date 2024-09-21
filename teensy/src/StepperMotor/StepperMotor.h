@@ -68,9 +68,9 @@ uint32_t velocityFromT(uint32_t t);
 
 float rpmFromT(uint32_t t);
 
-uint32_t accelerationFromRPMS2(float rpms2);
+uint32_t accelerationFromRPMS(float rpms);
 
-float rpms2FromAcceleration(uint32_t acceleration);
+float rpmsFromAcceleration(uint32_t acceleration);
 
 void restartStepper();
 
