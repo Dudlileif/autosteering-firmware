@@ -31,11 +31,12 @@
 
 void mainSetup()
 {
+#ifndef STEPPER_MOTOR_TESTING
     pinMode(WIFI_LED_R, OUTPUT);
     pinMode(WIFI_LED_G, OUTPUT);
     pinMode(WIFI_LED_B, OUTPUT);
     pinMode(SEND_LED_PIN, OUTPUT);
-
+#endif
     mountFileSystem();
 
     Serial.begin(SERIAL_BAUD);

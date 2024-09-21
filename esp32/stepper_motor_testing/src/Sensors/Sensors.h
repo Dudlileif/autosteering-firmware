@@ -14,11 +14,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+#ifndef SENSORS_H
+#define SENSORS_H
 
-#include "webpage_firmware.h"
-#include "webpage_main.h"
-#include "webpage_network.h"
-#if defined(AUTOSTEERING_BRIDGE) || defined(STEPPER_MOTOR_TESTING)
-#include "webpage_motor.h"
+#include <Arduino.h>
+
+void initSensors();
+
+uint16_t readADC();
+
 #endif
-#include "webpage_status.h"

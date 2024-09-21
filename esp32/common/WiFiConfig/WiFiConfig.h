@@ -41,6 +41,12 @@
 #define DEFAULT_AP_PASSWORD "tractor-remote-control"
 #endif
 
+#ifdef STEPPER_MOTOR_TESTING
+#define DEFAULT_HOSTNAME "stepper-motor-testing"
+#define DEFAULT_AP_SSID "Stepper Motor Testing AP"
+#define DEFAULT_AP_PASSWORD "stepper-motor-testing"
+#endif
+
 #define WIFI_CONFIG_FILE "/wifi_config"
 
 #define DEFAULT_AP_SERVER_PORT 80U

@@ -15,10 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "webpage_firmware.h"
-#include "webpage_main.h"
-#include "webpage_network.h"
-#if defined(AUTOSTEERING_BRIDGE) || defined(STEPPER_MOTOR_TESTING)
-#include "webpage_motor.h"
-#endif
-#include "webpage_status.h"
+#include <Arduino.h>
+#include <elapsedMillis.h>
+
+class PidController
+{
+private:
+    float integral = 0;
+    float prevError = 0;
+    elapsedMicros time;
+
+public:
+    float p = 3;
+    float i = 0.0;
+    float d = 1;
+    int integralSize = 1000;
+
+    PidController() {}
+    ~PidController() {}
+
+    float next(float error);
+    void clear();
+};

@@ -15,10 +15,36 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "webpage_firmware.h"
-#include "webpage_main.h"
-#include "webpage_network.h"
-#if defined(AUTOSTEERING_BRIDGE) || defined(STEPPER_MOTOR_TESTING)
-#include "webpage_motor.h"
-#endif
-#include "webpage_status.h"
+#include "PidController.h"
+
+float PidController::next(float error)
+{
+    float output = 0.0;
+
+    float timeInSeconds = time / 1e6;
+
+    // P, proportional gain applied to the error.
+    output = p * error;
+
+    // I, add the new error value to the integral/average.
+    integral =
+        (integral * ((integralSize - 1) / integralSize)) + timeInSeconds * error / integralSize;
+
+    output += i * integral;
+
+    // D, the change since the last loop.
+    float derivative = (error - prevError) / timeInSeconds;
+
+    output += d * derivative;
+
+    prevError = error;
+    time = 0;
+    return output;
+}
+
+void PidController::clear()
+{
+    prevError = 0;
+    integral = 0;
+    time = 0;
+}

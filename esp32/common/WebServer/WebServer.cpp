@@ -191,6 +191,9 @@ String titleReplacer()
 #ifdef AUTOSTEERING_REMOTE_CONTROL
   return String("Tractor Remote Control");
 #endif
+#ifdef STEPPER_MOTOR_TESTING
+  return String("Stepper Motor Testing");
+#endif
   return String("Firmware type missing!");
 }
 
@@ -652,7 +655,7 @@ String mainProcessor(const String &var)
   {
     return getIPAddress().toString();
   }
-#ifdef AUTOSTEERING_BRIDGE
+#if defined(AUTOSTEERING_BRIDGE) || defined(STEPPER_MOTOR_TESTING)
   if (var == "MOTOR")
   {
 
@@ -730,13 +733,14 @@ void startWebServer()
                       }
                       client->send("Hello!", NULL, millis(), 1000); });
 
-#if defined(AUTOSTEERING_REMOTE_CONTROL) || defined(BASE_STATION_RELAY)
+#if defined(AUTOSTEERING_REMOTE_CONTROL) || defined(BASE_STATION_RELAY) || defined(STEPPER_MOTOR_TESTING)
   webServer->on("/firmware", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send(200, "text/html", firmware_html, firmwareProcessor); });
 
   webServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send(200, "text/html", status_html, statusProcessor); });
-
+#ifndef STEPPER_MOTOR_TESTING
   webServer->begin();
+#endif
 #endif
 }

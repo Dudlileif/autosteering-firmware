@@ -15,10 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "webpage_firmware.h"
-#include "webpage_main.h"
-#include "webpage_network.h"
-#if defined(AUTOSTEERING_BRIDGE) || defined(STEPPER_MOTOR_TESTING)
-#include "webpage_motor.h"
+#ifndef WEBSERVERMOTORADDITIONS_H
+#define WEBSERVERMOTORADDITIONS_H
+
+#include <ArduinoJson.h>
+
+void addMotorCallbacksToWebServer();
+
+void sendPeriodicDataToEvents();
+
+void sendMessageToEvents(char *message, const char *channel);
+
+float roundToNumberOfDecimals(float value, int numDecimals);
+
+JsonDocument getSensorData();
 #endif
-#include "webpage_status.h"

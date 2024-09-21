@@ -39,9 +39,13 @@ elapsedMillis lastAPConnectedDeviceDisconnectTime;
 
 void setWiFiLED(color_t color)
 {
+#ifndef STEPPER_MOTOR_TESTING
     analogWrite(WIFI_LED_R, color.red);
     analogWrite(WIFI_LED_G, color.green);
     analogWrite(WIFI_LED_B, color.blue);
+#endif
+}
+
 void setupMDNS()
 {
     if (!MDNS.begin(wifiConfig.hostname))
@@ -378,9 +382,9 @@ int checkHeartbeats()
         if (millis() - destinations[i].heartbeat < HEARTBEAT_BUFFER_MS)
         {
             clientsAlive++;
-            }
-            else
-            {
+        }
+        else
+        {
             destinations[i].heartbeat = 0;
         }
     }
@@ -392,7 +396,9 @@ void sendUdpPacket(uint8_t *data, int packetSize, IPAddress destinationIP, uint 
 
     if (sendUDP.beginPacket(destinationIP, destinationPort))
     {
+#ifndef STEPPER_MOTOR_TESTING
         digitalWrite(SEND_LED_PIN, HIGH);
+#endif
         sendLEDTime = 0;
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
@@ -403,7 +409,9 @@ void sendUdpPacket(uint8_t *data, int packetSize, char *destinationHost, uint de
 {
     if (sendUDP.beginPacket(destinationHost, destinationPort))
     {
+#ifndef STEPPER_MOTOR_TESTING
         digitalWrite(SEND_LED_PIN, HIGH);
+#endif
         sendLEDTime = 0;
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
@@ -415,7 +423,9 @@ void sendUdpPacket(const char *data, int packetSize, IPAddress destinationIP, ui
 
     if (sendUDP.beginPacket(destinationIP, destinationPort))
     {
+#ifndef STEPPER_MOTOR_TESTING
         digitalWrite(SEND_LED_PIN, HIGH);
+#endif
         sendLEDTime = 0;
         sendUDP.write((const uint8_t *)data, packetSize);
         sendUDP.endPacket();
@@ -450,7 +460,7 @@ int receiveUdpPacket(char *udpPacketBuffer)
     if (size > 0)
     {
         size = receiveUDP.read(udpPacketBuffer, size);
-#if defined(AUTOSTEERING_BRIDGE) || defined(AUTOSTEERING_REMOTE_CONTROL)
+#if defined(AUTOSTEERING_BRIDGE) || defined(AUTOSTEERING_REMOTE_CONTROL) || defined(STEPPER_MOTOR_TESTING)
         updateDestinations();
 #endif
     }
@@ -472,6 +482,8 @@ void checkSendLED()
 {
     if (sendLEDTime > SEND_LED_ON_MS)
     {
+#ifndef STEPPER_MOTOR_TESTING
         digitalWrite(SEND_LED_PIN, LOW);
+#endif
     }
 }
