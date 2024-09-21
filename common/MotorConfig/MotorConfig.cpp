@@ -53,159 +53,159 @@ bool MotorConfig::load(Stream *stream)
     {
         reverseDirection = savedConfig["reverseDirection"];
     }
-    if (savedConfig.containsKey("AMAX_RPM_S_2"))
+    if (savedConfig["AMAX_RPM_S"].is<float>())
     {
         AMAX_RPM_S = savedConfig["AMAX_RPM_S"];
     }
-    if (savedConfig.containsKey("VMAX_RPM"))
+    if (savedConfig["VMAX_RPM"].is<float>())
     {
         VMAX_RPM = savedConfig["VMAX_RPM"];
     }
-    if (savedConfig.containsKey("VSTOP"))
+    if (savedConfig["VSTOP"].is<uint32_t>())
     {
         VSTOP = savedConfig["VSTOP"];
     }
-    if (savedConfig.containsKey("VSTART"))
+    if (savedConfig["VSTART"].is<uint32_t>())
     {
         VSTART = savedConfig["VSTART"];
     }
-    if (savedConfig.containsKey("TOFF"))
+    if (savedConfig["TOFF"].is<uint8_t>())
     {
         TOFF = savedConfig["TOFF"];
     }
-    if (savedConfig.containsKey("HSTRT"))
+    if (savedConfig["HSTRT"].is<uint8_t>())
     {
         HSTRT = savedConfig["HSTRT"];
     }
-    if (savedConfig.containsKey("HEND"))
+    if (savedConfig["HEND"].is<uint8_t>())
     {
         HEND = savedConfig["HEND"];
     }
-    if (savedConfig.containsKey("MICRO_STEPS"))
+    if (savedConfig["MICRO_STEPS"].is<uint16_t>())
     {
         MICRO_STEPS = savedConfig["MICRO_STEPS"];
     }
-    if (savedConfig.containsKey("STEPS_PER_ROT"))
+    if (savedConfig["STEPS_PER_ROT"].is<uint16_t>())
     {
         STEPS_PER_ROT = savedConfig["STEPS_PER_ROT"];
     }
-    if (savedConfig.containsKey("RMS_CURRENT"))
+    if (savedConfig["RMS_CURRENT"].is<uint16_t>())
     {
         RMS_CURRENT = savedConfig["RMS_CURRENT"];
     }
-    if (savedConfig.containsKey("hold_multiplier"))
+    if (savedConfig["hold_multiplier"].is<float>())
     {
         hold_multiplier = savedConfig["hold_multiplier"];
     }
-    if (savedConfig.containsKey("IHOLDDELAY"))
+    if (savedConfig["IHOLDDELAY"].is<uint8_t>())
     {
         IHOLDDELAY = savedConfig["IHOLDDELAY"];
     }
-    if (savedConfig.containsKey("freewheel"))
+    if (savedConfig["freewheel"].is<uint8_t>())
     {
         freewheel = savedConfig["freewheel"];
     }
-    if (savedConfig.containsKey("TBL"))
+    if (savedConfig["TBL"].is<uint8_t>())
     {
         TBL = savedConfig["TBL"];
     }
-    if (savedConfig.containsKey("TPOWERDOWN"))
+    if (savedConfig["TPOWERDOWN"].is<uint8_t>())
     {
         TPOWERDOWN = savedConfig["TPOWERDOWN"];
     }
-    if (savedConfig.containsKey("TZEROWAIT"))
+    if (savedConfig["TZEROWAIT"].is<uint16_t>())
     {
         TZEROWAIT = savedConfig["TZEROWAIT"];
     }
-    if (savedConfig.containsKey("en_pwm_mode"))
+    if (savedConfig["en_pwm_mode"].is<bool>())
     {
         en_pwm_mode = savedConfig["en_pwm_mode"];
     }
-    if (savedConfig.containsKey("pwm_autoscale"))
+    if (savedConfig["pwm_autoscale"].is<bool>())
     {
         pwm_autoscale = savedConfig["pwm_autoscale"];
     }
-    if (savedConfig.containsKey("pwm_autograd"))
+    if (savedConfig["pwm_autograd"].is<bool>())
     {
         pwm_autograd = savedConfig["pwm_autograd"];
     }
-    if (savedConfig.containsKey("SGT"))
+    if (savedConfig["SGT"].is<int8_t>())
     {
         SGT = savedConfig["SGT"];
     }
-    if (savedConfig.containsKey("sfilt"))
+    if (savedConfig["sfilt"].is<bool>())
     {
         sfilt = savedConfig["sfilt"];
     }
-    if (savedConfig.containsKey("sg_stop"))
+    if (savedConfig["sg_stop"].is<bool>())
     {
         sg_stop = savedConfig["sg_stop"];
     }
-    if (savedConfig.containsKey("TPWMTHRS_RPM"))
+    if (savedConfig["TPWMTHRS_RPM"].is<float>())
     {
         TPWMTHRS_RPM = savedConfig["TPWMTHRS_RPM"];
     }
-    if (savedConfig.containsKey("chm"))
+    if (savedConfig["chm"].is<bool>())
     {
         chm = savedConfig["chm"];
     }
-    if (savedConfig.containsKey("TCOOLTHRS_RPM"))
+    if (savedConfig["TCOOLTHRS_RPM"].is<float>())
     {
         TCOOLTHRS_RPM = savedConfig["TCOOLTHRS_RPM"];
     }
-    if (savedConfig.containsKey("semin"))
+    if (savedConfig["semin"].is<uint8_t>())
     {
         semin = savedConfig["semin"];
     }
-    if (savedConfig.containsKey("semax"))
+    if (savedConfig["semax"].is<uint8_t>())
     {
         semax = savedConfig["semax"];
     }
-    if (savedConfig.containsKey("THIGH_RPM"))
+    if (savedConfig["THIGH_RPM"].is<float>())
     {
         THIGH_RPM = savedConfig["THIGH_RPM"];
     }
-    if (savedConfig.containsKey("vhighfs"))
+    if (savedConfig["vhighfs"].is<bool>())
     {
         vhighfs = savedConfig["vhighfs"];
     }
-    if (savedConfig.containsKey("vhighchm"))
+    if (savedConfig["vhighchm"].is<bool>())
     {
         vhighchm = savedConfig["vhighchm"];
     }
-    if (savedConfig.containsKey("VDCMIN_RPM"))
+    if (savedConfig["VDCMIN_RPM"].is<float>())
     {
         VDCMIN_RPM = savedConfig["VDCMIN_RPM"];
     }
-    if (savedConfig.containsKey("DC_TIME"))
+    if (savedConfig["DC_TIME"].is<uint16_t>())
     {
         DC_TIME = savedConfig["DC_TIME"];
     }
-    if (savedConfig.containsKey("DC_SG"))
+    if (savedConfig["DC_SG"].is<uint8_t>())
     {
         DC_SG = savedConfig["DC_SG"];
     }
-    if (savedConfig.containsKey("pid_P"))
+    if (savedConfig["pid_P"].is<float>())
     {
         pidP = savedConfig["pid_P"];
     }
-    if (savedConfig.containsKey("pid_I"))
+    if (savedConfig["pid_I"].is<float>())
     {
         pidI = savedConfig["pid_I"];
     }
-    if (savedConfig.containsKey("pid_D"))
+    if (savedConfig["pid_D"].is<float>())
     {
         pidD = savedConfig["pid_D"];
     }
-    if (savedConfig.containsKey("was_min"))
+    if (savedConfig["was_min"].is<uint16_t>())
     {
         wasMin = savedConfig["was_min"];
     }
-    if (savedConfig.containsKey("was_center"))
+    if (savedConfig["was_center"].is<uint16_t>())
     {
         wasCenter = savedConfig["was_center"];
     }
-    if (savedConfig.containsKey("was_max"))
+    if (savedConfig["was_max"].is<uint16_t>())
     {
         wasMax = savedConfig["was_max"];
     }

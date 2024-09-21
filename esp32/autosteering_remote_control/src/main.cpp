@@ -129,7 +129,7 @@ void receiveUdpMessage()
         {
             JsonDocument message;
             deserializeJson(message, udpPacketBuffer);
-            if (message.containsKey("button_states"))
+            if (message["button_states"].is<JsonArray>())
             {
                 JsonArray buttonStates = message["button_states"];
                 for (int i = 0; i < buttonStates.size(); i++)
@@ -138,7 +138,7 @@ void receiveUdpMessage()
                 }
                 lastButtonStateReceiveTime = 0;
             }
-            if (message.containsKey("remote_states"))
+            if (message["remote_states"].is<JsonArray>())
             {
                 JsonArray remoteStates = message["remote_states"];
                 for (int i = 0; i < remoteStates.size(); i++)

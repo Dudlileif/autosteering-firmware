@@ -30,7 +30,7 @@
 #endif
 
 #ifdef AUTOSTEERING_BRIDGE
-#define DEFAULT_HOSTNAME "autosteering"
+#define DEFAULT_HOSTNAME "autosteering-hardware"
 #define DEFAULT_AP_SSID "Tractor Autosteering AP"
 #define DEFAULT_AP_PASSWORD "tractor-autosteering"
 #endif
@@ -68,9 +68,9 @@ public:
 
     WiFiConfig()
     {
-        strcpy(hostname, DEFAULT_HOSTNAME);
-        strcpy(apSSID, DEFAULT_AP_SSID);
-        strcpy(apPassword, DEFAULT_AP_PASSWORD);
+        strlcpy(hostname, DEFAULT_HOSTNAME, 32);
+        strlcpy(apSSID, DEFAULT_AP_SSID, 32);
+        strlcpy(apPassword, DEFAULT_AP_PASSWORD, 32);
         apServerPort = DEFAULT_AP_SERVER_PORT;
         tcpReceivePort = DEFAULT_TCP_RECEIVE_PORT;
         tcpSendPort = DEFAULT_TCP_SEND_PORT;
@@ -78,10 +78,10 @@ public:
         udpSendPort = DEFAULT_UDP_SEND_PORT;
         startInAPMode = false;
 #ifdef BASE_STATION_RELAY
-        strcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS);
+        strlcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS, 32);
 #endif
     };
-    ~WiFiConfig(){};
+    ~WiFiConfig() {};
 
     JsonDocument json();
     bool load(FS *fs);

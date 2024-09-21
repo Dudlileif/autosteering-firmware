@@ -41,19 +41,19 @@ bool WiFiConfig::load(FS *fs)
             return false;
         }
 
-        if (savedWifiConfig.containsKey("ap_ssid"))
+        if (savedWifiConfig["ap_ssid"].is<const char *>())
         {
-            strcpy(apSSID, savedWifiConfig["ap_ssid"]);
+            strlcpy(apSSID, savedWifiConfig["ap_ssid"], 32);
             Serial.printf("AP SSID: %s\n", apSSID);
         }
 
-        if (savedWifiConfig.containsKey("ap_password"))
+        if (savedWifiConfig["ap_password"].is<const char *>())
         {
-            strcpy(apPassword, savedWifiConfig["ap_password"]);
+            strlcpy(apPassword, savedWifiConfig["ap_password"], 32);
             Serial.printf("AP Password: %s\n", apPassword);
         }
 
-        if (savedWifiConfig.containsKey("ssid"))
+        if (savedWifiConfig["ssid"].is<JsonArray>())
         {
             JsonArray ssids = savedWifiConfig["ssid"];
 
@@ -63,7 +63,7 @@ bool WiFiConfig::load(FS *fs)
                 {
                     break;
                 }
-                strcpy(ssid[i], ssids[i]);
+                strlcpy(ssid[i], ssids[i], 32);
             }
             Serial.println("Saved SSIDs:");
             for (int i = 0; i < 5; i++)
@@ -75,14 +75,14 @@ bool WiFiConfig::load(FS *fs)
             }
         }
 
-        if (savedWifiConfig.containsKey("password"))
+        if (savedWifiConfig["password"].is<JsonArray>())
         {
             JsonArray passwords = savedWifiConfig["password"];
 
             for (int i = 0; i < passwords.size(); i++)
             {
 
-                strcpy(password[i], passwords[i]);
+                strlcpy(password[i], passwords[i], 63);
             }
             Serial.println("Saved passwords:");
             for (int i = 0; i < 5; i++)
@@ -93,63 +93,63 @@ bool WiFiConfig::load(FS *fs)
                 }
             }
         }
-        if (savedWifiConfig.containsKey("hostname"))
+        if (savedWifiConfig["hostname"].is<const char *>())
         {
-            strcpy(hostname, savedWifiConfig["hostname"]);
+            strlcpy(hostname, savedWifiConfig["hostname"], 32);
             Serial.printf("Saved hostname: %s\n", hostname);
         }
 
-        if (savedWifiConfig.containsKey("ap_ssid"))
+        if (savedWifiConfig["ap_ssid"].is<const char *>())
         {
-            strcpy(apSSID, savedWifiConfig["ap_ssid"]);
+            strlcpy(apSSID, savedWifiConfig["ap_ssid"], 32);
             Serial.printf("Saved AP SSID: %s\n", apSSID);
         }
-        if (savedWifiConfig.containsKey("ap_password"))
+        if (savedWifiConfig["ap_password"].is<const char *>())
         {
-            strcpy(apPassword, savedWifiConfig["ap_password"]);
+            strlcpy(apPassword, savedWifiConfig["ap_password"], 32);
             Serial.printf("Saved AP password: %s\n", apPassword);
         }
 
-        if (savedWifiConfig.containsKey("ap_server_port"))
+        if (savedWifiConfig["ap_server_port"].is<uint16_t>())
         {
             apServerPort = savedWifiConfig["ap_server_port"];
             Serial.printf("Saved AP server port: %d\n", apServerPort);
         }
 
-        if (savedWifiConfig.containsKey("tcp_receive_port"))
+        if (savedWifiConfig["tcp_receive_port"].is<uint16_t>())
         {
             tcpReceivePort = savedWifiConfig["tcp_receive_port"];
             Serial.printf("Saved TCP receive port: %d\n", tcpReceivePort);
         }
 
-        if (savedWifiConfig.containsKey("tcp_send_port"))
+        if (savedWifiConfig["tcp_send_port"].is<uint16_t>())
         {
             tcpSendPort = savedWifiConfig["tcp_send_port"];
             Serial.printf("Saved TCP send port: %d\n", tcpSendPort);
         }
 
-        if (savedWifiConfig.containsKey("udp_receive_port"))
+        if (savedWifiConfig["udp_receive_port"].is<uint16_t>())
         {
             udpReceivePort = savedWifiConfig["udp_receive_port"];
             Serial.printf("Saved UDP receive port: %d\n", udpReceivePort);
         }
 
-        if (savedWifiConfig.containsKey("udp_send_port"))
+        if (savedWifiConfig["udp_send_port"].is<uint16_t>())
         {
             udpSendPort = savedWifiConfig["udp_send_port"];
             Serial.printf("Saved UDP send port: %d\n", udpSendPort);
         }
 
-        if (savedWifiConfig.containsKey("start_in_ap_mode"))
+        if (savedWifiConfig["start_in_ap_mode"].is<bool>())
         {
             startInAPMode = savedWifiConfig["start_in_ap_mode"];
             Serial.printf("Start in AP mode: %s\n", startInAPMode ? "true" : "false");
         }
 
 #ifdef BASE_STATION_RELAY
-        if (savedWifiConfig.containsKey("rtk_base_station_address"))
+        if (savedWifiConfig["rtk_base_station_address"].is<const char *>())
         {
-            strcpy(rtkBaseStationAddress, savedWifiConfig["rtk_base_station_address"]);
+            strlcpy(rtkBaseStationAddress, savedWifiConfig["rtk_base_station_address"], 32);
             Serial.printf("RTKBase station address:  %s\n", rtkBaseStationAddress);
         }
 #endif
