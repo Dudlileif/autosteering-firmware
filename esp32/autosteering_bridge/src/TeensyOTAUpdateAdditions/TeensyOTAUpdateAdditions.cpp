@@ -31,7 +31,7 @@ void attemptTeensyUpdate()
         bool updated = attemptToUpdateTeensy(updateFileName);
         if (updated)
         {
-            uint32_t waitStart = millis();
+            elapsedMillis waitStart;
             Serial.println("Teensy was updated");
             bool gotVersion = false;
             Serial.print("Attempting to get version");
@@ -40,7 +40,7 @@ void attemptTeensyUpdate()
                 delay(500);
                 Serial.print(".");
                 gotVersion = getTeensyFirmwareVersion(false);
-            } while (!gotVersion && millis() - waitStart < 10000);
+            } while (!gotVersion && waitStart < 10000);
             Serial.println();
             if (gotVersion)
             {
@@ -72,12 +72,12 @@ bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
     delay(100);
     TEENSY_SERIAL.println("FIRMWARE");
-    uint32_t startTime = millis();
+    elapsedMillis elapsedTime;
     bool teensyReady = false;
     uint32_t transfered = 0;
     uint32_t percent = 0;
 
-    while (millis() - startTime < 1000 && !teensyReady)
+    while (elapsedTime < 1000 && !teensyReady)
     {
         const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
         Serial.println(message);

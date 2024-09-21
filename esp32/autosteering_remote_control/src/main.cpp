@@ -22,6 +22,7 @@
 #include <Config.h>
 #include <Network.h>
 #include <ArduinoJson.h>
+#include <elapsedMillis.h>
 
 const int minButtonTriggerPeriod = 250; // Milliseconds
 
@@ -30,9 +31,9 @@ const int minSendPeriod = 100; // Milliseconds
 const int buttonTimeout = 1000; // Milliseconds, resets button if this much time has passed without
                                 // receiving confirmation.
 
-uint32_t lastButtonStateSendTime = 0;
+elapsedMillis lastButtonStateSendTime;
 
-uint32_t lastButtonStateReceiveTime = 0;
+elapsedMillis lastButtonStateReceiveTime;
 
 const int numButtons = 3;
 
@@ -135,7 +136,7 @@ void receiveUdpMessage()
                 {
                     buttons[i].receivedState = buttonStates[i];
                 }
-                lastButtonStateReceiveTime = millis();
+                lastButtonStateReceiveTime = 0;
             }
             if (message.containsKey("remote_states"))
             {
@@ -171,10 +172,9 @@ void loop()
         {
             digitalWrite(buttons[i].ledPin, buttons[i].ledState);
         }
-        uint32_t now = millis();
-        if (now - lastButtonStateSendTime > minSendPeriod)
+        if (lastButtonStateSendTime > minSendPeriod)
         {
-            lastButtonStateSendTime = now;
+            lastButtonStateSendTime = 0;
             bool sendState = false;
             for (int i = 0; i < numButtons; i++)
             {
@@ -187,7 +187,7 @@ void loop()
             {
                 sendButtonStates();
             }
-
+            uint32_t now = millis();
             for (int i = 0; i < numButtons; i++)
             {
                 if ((!sendState && buttons[i].released) || now - buttons[i].lastTriggerTime > buttonTimeout)

@@ -17,14 +17,15 @@
 
 #include "MotorConfig.h"
 #include <ArduinoJson.h>
+#include <elapsedMillis.h>
 
 bool MotorConfig::load(Stream *stream)
 {
 
     bool configReady = false;
-    uint32_t waitStart = millis();
+    elapsedMillis waitStart;
     Serial.println("Waiting for motor config...");
-    while (!configReady && millis() - waitStart < 2000)
+    while (!configReady && waitStart < 2000)
     {
         if (stream->available())
         {

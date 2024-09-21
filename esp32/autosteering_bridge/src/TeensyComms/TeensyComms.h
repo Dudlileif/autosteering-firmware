@@ -19,6 +19,7 @@
 #define TEENSYCOMMS_H
 
 #include <MotorConfig.h>
+#include <elapsedMillis.h>
 
 const int TEENSY_BAUD = 921600;
 
@@ -32,7 +33,8 @@ extern MotorConfig motorConfig;
 
 extern unsigned long teensyUptimeMs;
 
-extern unsigned long lastTeensyCommTime;
+extern elapsedMillis lastTeensyCommElapsedTime;
+
 
 void sendMotorConfig();
 

@@ -17,6 +17,7 @@
 
 #include "Network.h"
 #include "../Config/Config.h"
+#include <elapsedMillis.h>
 
 WiFiConfig wifiConfig;
 
@@ -30,11 +31,11 @@ AsyncClient *tcpClient = nullptr;
 
 wl_status_t prevWiFiClientStatus = WL_DISCONNECTED;
 
-uint32_t sendLEDStartTime = 0;
+elapsedMillis sendLEDTime;
 
-uint32_t hardwareIdentifierSendTime = 0;
+elapsedMillis hardwareIdentifierSendTime;
 
-uint32_t lastAPConnectedDeviceDisconnectTime = 0;
+elapsedMillis lastAPConnectedDeviceDisconnectTime;
 
 void setWiFiLED(color_t color)
 {
@@ -194,7 +195,7 @@ void checkWiFiStatus()
                     Serial.printf("Sending identifier message to: %s:%d\n", WiFi.gatewayIP().toString().c_str(), wifiConfig.udpSendPort);
                     sendUdpPacket("Remote control", 15, WiFi.gatewayIP(), wifiConfig.udpSendPort);
                 }
-                hardwareIdentifierSendTime = millis();
+                hardwareIdentifierSendTime = 0;
             }
         }
         else
@@ -210,7 +211,7 @@ void checkWiFiStatus()
     else if (WiFi.getMode() == WIFI_MODE_AP || WiFi.getMode() == WIFI_MODE_APSTA)
     {
         uint connected = WiFi.softAPgetStationNum();
-        if (!wifiConfig.startInAPMode && wifiConfig.hasKnownNetworks() && connected < 1 && millis() - lastAPConnectedDeviceDisconnectTime > 5000)
+        if (!wifiConfig.startInAPMode && wifiConfig.hasKnownNetworks() && connected < 1 && lastAPConnectedDeviceDisconnectTime > 5000)
         {
             if (wifiMulti.run(5000) == WL_CONNECTED)
             {
@@ -235,7 +236,7 @@ void checkWiFiStatus()
             if (connected < 1)
             {
                 setWiFiLED(colorYellow);
-                lastAPConnectedDeviceDisconnectTime = millis();
+                lastAPConnectedDeviceDisconnectTime = 0;
             }
             else
             {
@@ -382,7 +383,7 @@ void sendUdpPacket(uint8_t *data, int packetSize, IPAddress destinationIP, uint 
     if (sendUDP.beginPacket(destinationIP, destinationPort))
     {
         digitalWrite(SEND_LED_PIN, HIGH);
-        sendLEDStartTime = millis();
+        sendLEDTime = 0;
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
     }
@@ -393,7 +394,7 @@ void sendUdpPacket(uint8_t *data, int packetSize, char *destinationHost, uint de
     if (sendUDP.beginPacket(destinationHost, destinationPort))
     {
         digitalWrite(SEND_LED_PIN, HIGH);
-        sendLEDStartTime = millis();
+        sendLEDTime = 0;
         sendUDP.write(data, packetSize);
         sendUDP.endPacket();
     }
@@ -405,7 +406,7 @@ void sendUdpPacket(const char *data, int packetSize, IPAddress destinationIP, ui
     if (sendUDP.beginPacket(destinationIP, destinationPort))
     {
         digitalWrite(SEND_LED_PIN, HIGH);
-        sendLEDStartTime = millis();
+        sendLEDTime = 0;
         sendUDP.write((const uint8_t *)data, packetSize);
         sendUDP.endPacket();
     }

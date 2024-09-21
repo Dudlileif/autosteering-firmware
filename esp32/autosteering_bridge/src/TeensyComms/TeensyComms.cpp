@@ -27,7 +27,7 @@ String teensyCrashReport;
 
 unsigned long teensyUptimeMs = 0;
 
-unsigned long lastTeensyCommTime = 0;
+elapsedMillis lastTeensyCommElapsedTime = 0;
 
 bool teensyUnresponsive = false;
 
@@ -56,9 +56,9 @@ bool getTeensyFirmwareVersion(bool debugPrint)
     delay(100);
     TEENSY_SERIAL.println("VERSION");
 
-    uint32_t startTime = millis();
+    elapsedMillis elapsedTime;
     bool messageReady = false;
-    while (millis() - startTime < 1000 && !messageReady)
+    while (elapsedTime < 1000 && !messageReady)
     {
         const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
         if (strstr(message, "TEENSY VERSION"))
@@ -82,7 +82,7 @@ bool getTeensyFirmwareVersion(bool debugPrint)
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     priorityMessageInProgress = false;
-    lastTeensyCommTime = millis();
+    lastTeensyCommElapsedTime = 0;
     return messageReady;
 }
 
@@ -98,9 +98,9 @@ bool getTeensyCrashReport(bool debugPrint)
     delay(100);
     TEENSY_SERIAL.println("CRASH");
 
-    uint32_t startTime = millis();
+    elapsedMillis elapsedTime;
     bool messageReady = false;
-    while (millis() - startTime < 1000 && !messageReady)
+    while (elapsedTime < 1000 && !messageReady)
     {
         const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
         if (strstr(message, "CRASH REPORT"))
@@ -124,7 +124,7 @@ bool getTeensyCrashReport(bool debugPrint)
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     priorityMessageInProgress = false;
-    lastTeensyCommTime = millis();
+    lastTeensyCommElapsedTime = 0;
     return messageReady;
 }
 
@@ -140,9 +140,9 @@ bool getTeensyUptime(bool debugPrint)
     delay(100);
     TEENSY_SERIAL.println("UPTIME");
 
-    uint32_t startTime = millis();
+    elapsedMillis elapsedTime;
     bool messageReady = false;
-    while (millis() - startTime < 1000 && !messageReady)
+    while (elapsedTime < 1000 && !messageReady)
     {
         const char *message = TEENSY_SERIAL.readStringUntil('\n').c_str();
         if (strstr(message, "TEENSY UPTIME MS"))
@@ -167,7 +167,7 @@ bool getTeensyUptime(bool debugPrint)
     }
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     priorityMessageInProgress = false;
-    lastTeensyCommTime = millis();
+    lastTeensyCommElapsedTime = 0;
     return messageReady;
 }
 
@@ -202,10 +202,11 @@ int readTeensySerial(uint8_t *buffer)
 
 void checkIfTeensyIsResponding()
 {
-    if (millis() - lastTeensyCommTime > TEENSY_SERIAL_TIMEOUT_MS && !priorityMessageInProgress)
+    if (lastTeensyCommElapsedTime > TEENSY_SERIAL_TIMEOUT_MS && !priorityMessageInProgress)
     {
         teensyUnresponsive = true;
-        Serial.printf("Teensy serial timeout reached (%d ms): %d ms\r", TEENSY_SERIAL_TIMEOUT_MS, millis() - lastTeensyCommTime);
+        Serial.printf("Teensy serial timeout reached (%d ms): %d ms\r", TEENSY_SERIAL_TIMEOUT_MS, lastTeensyCommElapsedTime);
+        digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, LOW);
     }
     else
     {
