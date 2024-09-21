@@ -358,3 +358,5 @@ void updateStepper()
         }
     }
 }
+
+// TODO: Add stall when steering is not responding (manual takeover)

@@ -34,7 +34,7 @@ uint16_t wasReading = 0;
 ADC *adc = new ADC();
 
 // Rounds a number to a certain number of decimals.
-double roundToNumberOfDecimals(double value, int numDecimals)
+float roundToNumberOfDecimals(float value, int numDecimals)
 {
     int sign = (value > 0) - (value < 0);
 
@@ -157,6 +157,7 @@ JsonDocument getSensorData()
     }
 
     data["motor_enabled"] = motorEnabled;
+    data["motor_stalled"] = motorStalled;
     if (motorEnabled || motorCalibration)
     {
         data["motor_rpm"] = roundToNumberOfDecimals(stepperRPMActual, 3);

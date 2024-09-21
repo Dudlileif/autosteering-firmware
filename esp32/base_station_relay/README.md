@@ -10,7 +10,8 @@ To access the configuration web site, connect to the same network and go to the 
 
 ## Receive data on caster device
 
-To bind the incoming UDP to a virtual serial port [socat](http://www.dest-unreach.org/socat/) can be used. This is necessary when running [RTKBase](https://github.com/stefal/rtkbase) with a [Raspberry Pi](https://www.raspberrypi.com/products/) or similar since it only supports serial/USB connected GNSS receivers
+To bind the incoming UDP to a virtual serial port [socat](http://www.dest-unreach.org/socat/) can be used. This is necessary when running [RTKBase](https://github.com/stefal/rtkbase) with a [Raspberry Pi](https://www.raspberrypi.com/products/) or similar since it only supports serial/USB connected GNSS receivers.
+
 Adding the following lines
 to `/etc/rc.local` will automatically create the link on startup to
 the ESP32 relay at `gnss-rtk-base-station.local` with receive port `3333` and send port `6666`.

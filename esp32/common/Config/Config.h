@@ -55,7 +55,10 @@ const uint SEND_LED_ON_MS = 250;
 
 const int SERIAL_BAUD = 115200;
 
-const uint HEARTBEAT_BUFFER_MS = 5000; // Milliseconds, UDP clients are dropped if not receiving a heartbeat within this time.
+/**
+ * Milliseconds, a UDP client is dropped if no heartbeat is received within this time.
+ */
+const uint HEARTBEAT_BUFFER_MS = 5000;
 
 typedef struct color_t
 {

@@ -32,7 +32,7 @@ extern BNO08x_RVC_Data prevImuReading;
 
 extern uint16_t wasReading;
 
-double roundToNumberOfDecimals(double, int);
+float roundToNumberOfDecimals(float, int);
 
 void imuInit();
 

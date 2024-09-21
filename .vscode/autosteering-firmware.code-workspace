@@ -19,6 +19,10 @@
 		{
 			"name": "base_station_relay",
 			"path": "../esp32/base_station_relay"
+		},
+		{
+			"name": "stepper_motor_testing",
+			"path": "../esp32/stepper_motor_testing"
 		}
 	],
 	"settings": {
@@ -46,11 +50,13 @@
 			"fstream": "cpp",
 			"atomic": "cpp",
 			"sstream": "cpp",
-			"cstring": "cpp"
+			"cstring": "cpp",
+			"*.ipp": "cpp",
+			"complex": "cpp"
 		}
 		,
 		"licenser.author": "Gaute Hagen",
 		"licenser.license": "GPLv3",
-		"licenser.projectName": "Autosteering Firmware",
+		"licenser.projectName": "Autosteering Firmware"
 	}
 }
