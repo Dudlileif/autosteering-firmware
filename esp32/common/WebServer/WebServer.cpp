@@ -511,11 +511,11 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request)
       {
         numEmptySSIDs += 1;
       }
-      strcpy(wifiConfig.ssid[ssidIsEmpty ? i : i - numEmptySSIDs], ssidIsEmpty ? "" : value.c_str());
+      strlcpy(wifiConfig.ssid[ssidIsEmpty ? i : i - numEmptySSIDs], ssidIsEmpty ? "" : value.c_str(), 32);
     }
     if (request->hasParam(password))
     {
-      strcpy(wifiConfig.password[ssidIsEmpty ? i : i - numEmptySSIDs], ssidIsEmpty ? "" : request->getParam(password)->value().c_str());
+      strlcpy(wifiConfig.password[ssidIsEmpty ? i : i - numEmptySSIDs], ssidIsEmpty ? "" : request->getParam(password)->value().c_str(), 32);
     }
     if (!ssidIsEmpty)
     {
@@ -524,15 +524,15 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request)
   }
   if (request->hasParam("hostname"))
   {
-    strcpy(wifiConfig.hostname, request->getParam("hostname")->value().c_str());
+    strlcpy(wifiConfig.hostname, request->getParam("hostname")->value().c_str(), 32);
   }
   if (request->hasParam("ssid_ap"))
   {
-    strcpy(wifiConfig.apSSID, request->getParam("ssid_ap")->value().c_str());
+    strlcpy(wifiConfig.apSSID, request->getParam("ssid_ap")->value().c_str(), 32);
   }
   if (request->hasParam("password_ap"))
   {
-    strcpy(wifiConfig.apPassword, request->getParam("password_ap")->value().c_str());
+    strlcpy(wifiConfig.apPassword, request->getParam("password_ap")->value().c_str(), 32);
   }
   if (request->hasParam("start_in_ap_mode"))
   {
@@ -565,7 +565,7 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request)
 #ifdef BASE_STATION_RELAY
   if (request->hasParam("rtk_base_station_address"))
   {
-    strcpy(wifiConfig.rtkBaseStationAddress, request->getParam("rtk_base_station_address")->value().c_str());
+    strlcpy(wifiConfig.rtkBaseStationAddress, request->getParam("rtk_base_station_address")->value().c_str(), 32);
   }
 #endif
 
@@ -681,10 +681,10 @@ void startWebServer()
   webServer->addHandler(events);
 
   webServer->on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send_P(200, "text/html", main_html, mainProcessor); });
+                { request->send(200, "text/html", main_html, mainProcessor); });
 
   webServer->on("/network", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send_P(200, "text/html", network_html, networkProcessor); });
+                { request->send(200, "text/html", network_html, networkProcessor); });
 
   webServer->on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request)
                 {request->send(200, "text/plain", "ESP32 rebooting");
@@ -732,10 +732,10 @@ void startWebServer()
 
 #if defined(AUTOSTEERING_REMOTE_CONTROL) || defined(BASE_STATION_RELAY)
   webServer->on("/firmware", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send_P(200, "text/html", firmware_html, firmwareProcessor); });
+                { request->send(200, "text/html", firmware_html, firmwareProcessor); });
 
   webServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send_P(200, "text/html", status_html, statusProcessor); });
+                { request->send(200, "text/html", status_html, statusProcessor); });
 
   webServer->begin();
 #endif

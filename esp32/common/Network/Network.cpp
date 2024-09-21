@@ -42,6 +42,17 @@ void setWiFiLED(color_t color)
     analogWrite(WIFI_LED_R, color.red);
     analogWrite(WIFI_LED_G, color.green);
     analogWrite(WIFI_LED_B, color.blue);
+void setupMDNS()
+{
+    if (!MDNS.begin(wifiConfig.hostname))
+    {
+        Serial.println("Error setting up MDNS responder!");
+        while (1)
+        {
+            delay(1000);
+        }
+    }
+    Serial.printf("ESP hostname: %s\n", wifiConfig.hostname);
 }
 
 void startWiFiAP()
@@ -62,15 +73,7 @@ void startWiFiAP()
             ;
     }
     Serial.printf("AP IP address: %s\n", WiFi.softAPIP().toString().c_str());
-    if (!MDNS.begin(wifiConfig.hostname))
-    {
-        Serial.println("Error setting up MDNS responder!");
-        while (1)
-        {
-            delay(1000);
-        }
-    }
-    Serial.printf("ESP hostname: %s\n", wifiConfig.hostname);
+    setupMDNS();
 }
 
 void startWiFiClient()
@@ -103,15 +106,7 @@ void startWiFiClient()
     }
 
     wifiMulti.run();
-    if (!MDNS.begin(wifiConfig.hostname))
-    {
-        Serial.println("Error setting up MDNS responder!");
-        while (1)
-        {
-            delay(1000);
-        }
-    }
-    Serial.printf("ESP hostname: %s\n", wifiConfig.hostname);
+    setupMDNS();
 }
 
 static void handleData(void *, AsyncClient *, void *data, size_t len)
@@ -179,24 +174,42 @@ void checkWiFiStatus()
         }
         else if (status == WL_CONNECTED)
         {
-
             setWiFiLED(colorGreen);
             if (status != prevWiFiClientStatus)
             {
                 Serial.printf("WiFi connected to: %s\n", WiFi.SSID().c_str());
                 Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
                 Serial.printf("Gateway IP address: %s\n", WiFi.gatewayIP().toString().c_str());
+                setupMDNS();
             }
 
-            if (millis() - hardwareIdentifierSendTime > 10000)
+#if defined(AUTOSTEERING_BRIDGE) || defined(AUTOSTEERING_REMOTE_CONTROL)
+            if (hardwareIdentifierSendTime > 10000)
             {
-                if (!clientsAlive)
+                bool gatewayIsClient = false;
+                IPAddress gatewayIPAddress = WiFi.gatewayIP();
+                for (int i = 0; i < 4; i++)
                 {
+                    if (destinations[i].ip == gatewayIPAddress)
+                    {
+                        gatewayIsClient = true;
+                        break;
+                    }
+                }
+                if (!gatewayIsClient)
+                {
+
                     Serial.printf("Sending identifier message to: %s:%d\n", WiFi.gatewayIP().toString().c_str(), wifiConfig.udpSendPort);
+#ifdef AUTOSTEERING_BRIDGE
+                    sendUdpPacket("Steering hardware", 18, WiFi.gatewayIP(), wifiConfig.udpSendPort);
+#endif
+#ifdef AUTOSTEERING_REMOTE_CONTROL
                     sendUdpPacket("Remote control", 15, WiFi.gatewayIP(), wifiConfig.udpSendPort);
+#endif
                 }
                 hardwareIdentifierSendTime = 0;
             }
+#endif
         }
         else
         {
@@ -321,14 +334,14 @@ String wifiAuthTypeToString(wifi_auth_mode_t authType)
 int findDestinationIndexToOverwrite()
 {
     int freeIndex = 0;
-    for (int i = 1; i < 4; i++)
+    for (int i = 0; i < 4; i++)
     {
         if (destinations[i].heartbeat == 0)
         {
             freeIndex = i;
             break;
         }
-        else if (destinations[i].heartbeat < destinations[freeIndex].heartbeat)
+        else if (i > 0 && destinations[i].heartbeat < destinations[freeIndex].heartbeat)
         {
             freeIndex = i;
         }
@@ -362,16 +375,13 @@ int checkHeartbeats()
     int clientsAlive = 0;
     for (int i = 0; i < 4; i++)
     {
-        if (destinations[i].heartbeat != 0)
+        if (millis() - destinations[i].heartbeat < HEARTBEAT_BUFFER_MS)
         {
-            if (millis() - HEARTBEAT_BUFFER_MS > destinations[i].heartbeat)
-            {
-                destinations[i].heartbeat = 0;
+            clientsAlive++;
             }
             else
             {
-                clientsAlive++;
-            }
+            destinations[i].heartbeat = 0;
         }
     }
     return clientsAlive;
@@ -416,7 +426,7 @@ void sendUdpData(uint8_t *buffer, int messageSize)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (destinations[i].heartbeat != 0)
+        if (millis() - destinations[i].heartbeat < HEARTBEAT_BUFFER_MS)
         {
             sendUdpPacket(buffer, messageSize, destinations[i].ip, wifiConfig.udpSendPort);
         }
@@ -427,7 +437,7 @@ void sendUdpData(const char *buffer, int messageSize)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (destinations[i].heartbeat != 0)
+        if (millis() - destinations[i].heartbeat < HEARTBEAT_BUFFER_MS)
         {
             sendUdpPacket(buffer, messageSize, destinations[i].ip, wifiConfig.udpSendPort);
         }
@@ -460,7 +470,7 @@ IPAddress getIPAddress()
 
 void checkSendLED()
 {
-    if (millis() - sendLEDStartTime > SEND_LED_ON_MS)
+    if (sendLEDTime > SEND_LED_ON_MS)
     {
         digitalWrite(SEND_LED_PIN, LOW);
     }
