@@ -71,7 +71,7 @@ bool performTeensyUpdate(Stream &updateSource, size_t updateSize)
     Serial.println("Notifying Teensy of incoming priority message.");
     digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
     delay(100);
-    TEENSY_SERIAL.println("FIRMWARE");
+    TEENSY_SERIAL.println("$FIRMWARE");
     elapsedMillis elapsedTime;
     bool teensyReady = false;
     uint32_t transfered = 0;

@@ -34,7 +34,7 @@ void setup()
     mainSetup();
     addTeensyCallbacksToWebServer();
 
-    TEENSY_SERIAL.setRxBufferSize(512);
+    TEENSY_SERIAL.setRxBufferSize(1024);
     TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
     motorConfig.loadFromFile(&LittleFS);
 
@@ -49,7 +49,7 @@ void setup()
 
     getTeensyFirmwareVersion(true);
 }
-
+    
 void loop()
 {
     if (doUpdate && updateFileName.endsWith(".hex"))
@@ -58,12 +58,7 @@ void loop()
     }
     if (mainLoop())
     {
-        uint8_t buffer[512];
-        int serialSize = readTeensySerial(buffer);
-        if (serialSize > 0)
-        {
-            sendUdpData(buffer, serialSize);
-        }
+        readTeensySerial();
 
         // UDP maxes out at 1460
         char udpPacketBuffer[1460];
@@ -73,6 +68,7 @@ void loop()
         {
             TEENSY_SERIAL.write(udpPacketBuffer, udpPacketSize);
         }
+        sendPeriodicDataToEvents();
 
         checkIfTeensyIsResponding();
     }

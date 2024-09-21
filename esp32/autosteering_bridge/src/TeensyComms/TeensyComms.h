@@ -35,6 +35,28 @@ extern unsigned long teensyUptimeMs;
 
 extern elapsedMillis lastTeensyCommElapsedTime;
 
+struct TeensyHardwareState
+{
+    uint16_t wasReading;
+    uint16_t wasTarget;
+    bool motorEnabled;
+    bool motorStalled;
+    float rpm;
+    uint16_t stallguardResult;
+    uint8_t currentScale;
+    float yaw;
+    float pitch;
+    float roll;
+    float accX;
+    float accY;
+    float accZ;
+};
+
+extern String gnssNmeaGns;
+extern String gnssNmeaGst;
+extern String gnssNmeaVtg;
+
+extern TeensyHardwareState teensyHardwareState;
 
 void sendMotorConfig();
 
@@ -46,8 +68,9 @@ bool getTeensyUptime(bool debugPrint);
 
 void rebootTeensy();
 
-int readTeensySerial(uint8_t *buffer);
+void readTeensySerial();
 
 void checkIfTeensyIsResponding();
 
+void parseTeensyData(char byte);
 #endif

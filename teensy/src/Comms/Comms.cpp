@@ -82,63 +82,71 @@ void handlePriorityMessage()
         Serial.println("Priority message available, preparing...");
     }
     priorityMessageInProgress = true;
-    const char *message = NETWORK_SERIAL.readStringUntil('\n').c_str();
-    if (strlen(message) > 0)
+    elapsedMillis waiting;
+    while (waiting < 1000)
     {
-        Serial.println(message);
-        Serial.printf("Priority message: \n\t%s\n", message);
-        if (strstr(message, "FIRMWARE"))
+        const char byte = char(NETWORK_SERIAL.read());
+        if (byte == '$')
         {
-            NETWORK_SERIAL.println("READY");
-            Serial.println("Firmware update available, preparing...");
-            firmwareUpdateInProgress = true;
-            performUpdate();
-        }
-        else if (strstr(message, "MOTOR"))
-        {
-            Serial.println("Attempting to receive motor config...");
-            bool success = motorConfig.load(&NETWORK_SERIAL);
-            Serial.printf("Motor config reception %s.\n", success ? "completed" : "failed");
-            Serial.println("Motor config:");
-            motorConfig.printToStreamPretty(&Serial);
-            stepperInit();
-        }
-        else if (strstr(message, "VERSION"))
-        {
-            NETWORK_SERIAL.println("TEENSY VERSION");
-            Serial.println("Sending firmware version");
-            NETWORK_SERIAL.println(String(FIRMWARE_TYPE) + String("_") + String(VERSION));
-        }
-        else if (strstr(message, "CRASH"))
-        {
-            NETWORK_SERIAL.print("CRASH REPORT");
-            NETWORK_SERIAL.println("");
-            NETWORK_SERIAL.print("CRASH REPORT");
+            const char *message = NETWORK_SERIAL.readStringUntil('\n').c_str();
+            if (strlen(message) > 0)
+            {
+                Serial.println(message);
+                Serial.printf("Priority message: \n\t%s\n", message);
+                if (strstr(message, "FIRMWARE"))
+                {
+                    NETWORK_SERIAL.println("READY");
+                    Serial.println("Firmware update available, preparing...");
+                    firmwareUpdateInProgress = true;
+                    performUpdate();
+                }
+                else if (strstr(message, "MOTOR"))
+                {
+                    Serial.println("Attempting to receive motor config...");
+                    bool success = motorConfig.load(&NETWORK_SERIAL);
+                    Serial.printf("Motor config reception %s.\n", success ? "completed" : "failed");
+                    Serial.println("Motor config:");
+                    motorConfig.printToStreamPretty(&Serial);
+                    updateStepperDriverConfig();
+                }
+                else if (strstr(message, "VERSION"))
+                {
+                    NETWORK_SERIAL.println("TEENSY VERSION");
+                    Serial.println("Sending firmware version");
+                    NETWORK_SERIAL.println(String(FIRMWARE_TYPE) + String("_") + String(VERSION));
+                }
+                else if (strstr(message, "CRASH"))
+                {
+                    NETWORK_SERIAL.print("CRASH REPORT");
+                    NETWORK_SERIAL.println("");
+                    NETWORK_SERIAL.print("CRASH REPORT");
 
-            if (CrashReport)
-            {
-                Serial.println("Crash report found, sending...");
-                NETWORK_SERIAL.print(CrashReport);
-                Serial.print(CrashReport);
+                    if (CrashReport)
+                    {
+                        Serial.println("Crash report found, sending...");
+                        NETWORK_SERIAL.print(CrashReport);
+                        Serial.print(CrashReport);
+                    }
+                    else
+                    {
+                        Serial.println("No crash report found.");
+                        NETWORK_SERIAL.print("No crash report.");
+                    }
+                    NETWORK_SERIAL.print('~');
+                    NETWORK_SERIAL.println("");
+                }
+                else if (strstr(message, "UPTIME"))
+                {
+                    NETWORK_SERIAL.println("TEENSY UPTIME MS");
+                    Serial.println("Sending uptime ms");
+                    NETWORK_SERIAL.println(millis());
+                }
+                else if (strstr(message, "REBOOT"))
+                {
+                    Serial.println("Rebooting...");
+                    SCB_AIRCR = 0x05FA0004;
+                }
             }
-            else
-            {
-                Serial.println("No crash report found.");
-                NETWORK_SERIAL.print("No crash report.");
-            }
-            NETWORK_SERIAL.print('~');
-            NETWORK_SERIAL.println("");
-        }
-        else if (strstr(message, "UPTIME"))
-        {
-            NETWORK_SERIAL.println("TEENSY UPTIME MS");
-            Serial.println("Sending uptime ms");
-            NETWORK_SERIAL.println(millis());
-        }
-        else if (strstr(message, "REBOOT"))
-        {
-            Serial.println("Rebooting...");
-            SCB_AIRCR = 0x05FA0004;
         }
     }
     Serial.println("Priority message over.");
@@ -165,7 +173,7 @@ void sendSensorData()
         int size = measureJson(data);
         if (size > 4)
         {
-            char serialized[256];
+            char serialized[300];
             serializeJson(data, serialized);
             if (char(serialized[0]) == '{' && char(serialized[size - 1]) == '}')
             {

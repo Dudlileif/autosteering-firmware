@@ -25,9 +25,11 @@
 #include "../TeensyComms/TeensyComms.h"
 #include "../TeensyOTAUpdateAdditions/TeensyOTAUpdateAdditions.h"
 
+elapsedMicros webEventsDataElapsedTime;
+
 String microStepsForm(uint16_t value)
 {
-    String entry = R"=====(<input type = "radio" name = "MICRO_STEPS" id = "%VALUE%" value = "%VALUE%" %CHECKED%>
+    String entry = R"=====(<input type = "radio" name = "MICRO_STEPS" id = "micro_steps_%VALUE%" value = "%VALUE%" %CHECKED%>
       <label for="%VALUE%">%LABEL%</label>
 )=====";
 
@@ -74,7 +76,7 @@ String motorProcessor(const String &var)
         {
             String key = String(kv.key().c_str());
             // Filter boolean parameters
-            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "invertDirection")
+            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "reverseDirection")
             {
                 form += checkboxForm(key, key, key, bool(kv.value()), "toggleCheckbox", motorConfig.getDescription(key));
             }
@@ -98,7 +100,7 @@ String motorProcessor(const String &var)
             {
                 form += numberForm(key, key, key, 0, 255, uint8_t(kv.value()), motorConfig.getDescription(key));
             }
-            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S_2")
+            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S")
             {
                 form += numberForm(key, key, key, 0.0, 1000.0, 1.0, float(kv.value()), motorConfig.getDescription(key));
             }
@@ -161,7 +163,7 @@ String motorProcessor(const String &var)
         uint16_t values[2] = {400, 200};
         for (uint16_t value : values)
         {
-            String entry = R"=====(<input type = "radio" name = "STEPS_PER_ROT" id = "%VALUE%" value = "%VALUE%" %CHECKED%>
+            String entry = R"=====(<input type = "radio" name = "STEPS_PER_ROT" id = "steps_per_rot_%VALUE%" value = "%VALUE%" %CHECKED%>
       <label for="%VALUE%">%LABEL%</label>
 )=====";
             entry.replace("%VALUE%", String(value));
@@ -200,204 +202,205 @@ String statusWithTeensyProcessor(const String &var)
     }
     return String();
 }
-void onUpdateMotorConfig(AsyncWebServerRequest *request)
+
+void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
 {
     Serial.println("Received motor config update");
-    if (request->hasParam("AMAX_RPM_S_2"))
+    if (request->hasParam("AMAX_RPM_S", post))
     {
-        motorConfig.AMAX_RPM_S_2 = constrain(request->getParam("AMAX_RPM_S_2")->value().toFloat(), 0.0, 3597);
+        motorConfig.AMAX_RPM_S = constrain(request->getParam("AMAX_RPM_S", post)->value().toFloat(), 0.0, 3597);
     }
-    if (request->hasParam("VMAX_RPM"))
+    if (request->hasParam("VMAX_RPM", post))
     {
-        motorConfig.VMAX_RPM = constrain(request->getParam("VMAX_RPM")->value().toFloat(), 0.0, 1000);
+        motorConfig.VMAX_RPM = constrain(request->getParam("VMAX_RPM", post)->value().toFloat(), 0.0, 1000);
     }
-    if (request->hasParam("VSTOP"))
+    if (request->hasParam("VSTOP", post))
     {
-        motorConfig.VSTOP = constrain(request->getParam("VSTOP")->value().toInt(), 0, pow(2, 18) - 1);
+        motorConfig.VSTOP = constrain(request->getParam("VSTOP", post)->value().toInt(), 0, pow(2, 18) - 1);
     }
-    if (request->hasParam("VSTART"))
+    if (request->hasParam("VSTART", post))
     {
-        motorConfig.VSTART = constrain(request->getParam("VSTART")->value().toInt(), 0, pow(2, 18) - 1);
+        motorConfig.VSTART = constrain(request->getParam("VSTART", post)->value().toInt(), 0, pow(2, 18) - 1);
     }
-    if (request->hasParam("TOFF"))
+    if (request->hasParam("TOFF", post))
     {
-        motorConfig.TOFF = constrain(request->getParam("TOFF")->value().toInt(), 0, 15);
+        motorConfig.TOFF = constrain(request->getParam("TOFF", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("HSTRT"))
+    if (request->hasParam("HSTRT", post))
     {
-        motorConfig.HSTRT = constrain(request->getParam("HSTRT")->value().toInt(), 0, 15);
+        motorConfig.HSTRT = constrain(request->getParam("HSTRT", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("HEND"))
+    if (request->hasParam("HEND", post))
     {
-        motorConfig.HEND = constrain(request->getParam("HEND")->value().toInt(), 0, 15);
+        motorConfig.HEND = constrain(request->getParam("HEND", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("MICRO_STEPS"))
+    if (request->hasParam("MICRO_STEPS", post))
     {
-        motorConfig.MICRO_STEPS = request->getParam("MICRO_STEPS")->value().toInt();
+        motorConfig.MICRO_STEPS = request->getParam("MICRO_STEPS", post)->value().toInt();
     }
-    if (request->hasParam("STEPS_PER_ROT"))
+    if (request->hasParam("STEPS_PER_ROT", post))
     {
-        motorConfig.STEPS_PER_ROT = request->getParam("STEPS_PER_ROT")->value().toInt();
+        motorConfig.STEPS_PER_ROT = request->getParam("STEPS_PER_ROT", post)->value().toInt();
     }
-    if (request->hasParam("RMS_CURRENT"))
+    if (request->hasParam("RMS_CURRENT", post))
     {
-        motorConfig.RMS_CURRENT = constrain(request->getParam("RMS_CURRENT")->value().toInt(), 0, 3000);
+        motorConfig.RMS_CURRENT = constrain(request->getParam("RMS_CURRENT", post)->value().toInt(), 0, 3000);
     }
-    if (request->hasParam("hold_multiplier"))
+    if (request->hasParam("hold_multiplier", post))
     {
-        motorConfig.hold_multiplier = constrain(request->getParam("hold_multiplier")->value().toFloat(), 0.0, 1.0);
+        motorConfig.hold_multiplier = constrain(request->getParam("hold_multiplier", post)->value().toFloat(), 0.0, 1.0);
     }
-    if (request->hasParam("IHOLDDELAY"))
+    if (request->hasParam("IHOLDDELAY", post))
     {
-        motorConfig.IHOLDDELAY = constrain(request->getParam("IHOLDDELAY")->value().toInt(), 0, 15);
+        motorConfig.IHOLDDELAY = constrain(request->getParam("IHOLDDELAY", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("freewheel"))
+    if (request->hasParam("freewheel", post))
     {
-        motorConfig.freewheel = constrain(request->getParam("freewheel")->value().toInt(), 0, 3);
+        motorConfig.freewheel = constrain(request->getParam("freewheel", post)->value().toInt(), 0, 3);
     }
-    if (request->hasParam("TBL"))
+    if (request->hasParam("TBL", post))
     {
-        motorConfig.TBL = constrain(request->getParam("TBL")->value().toInt(), 0, 3);
+        motorConfig.TBL = constrain(request->getParam("TBL", post)->value().toInt(), 0, 3);
     }
-    if (request->hasParam("TPOWERDOWN"))
+    if (request->hasParam("TPOWERDOWN", post))
     {
-        motorConfig.TPOWERDOWN = constrain(request->getParam("TPOWERDOWN")->value().toInt(), 0, 255);
+        motorConfig.TPOWERDOWN = constrain(request->getParam("TPOWERDOWN", post)->value().toInt(), 0, 255);
     }
-    if (request->hasParam("TZEROWAIT"))
+    if (request->hasParam("TZEROWAIT", post))
     {
-        motorConfig.TZEROWAIT = constrain(request->getParam("TZEROWAIT")->value().toInt(), 0, pow(2, 16) - 1);
+        motorConfig.TZEROWAIT = constrain(request->getParam("TZEROWAIT", post)->value().toInt(), 0, pow(2, 16) - 1);
     }
-    if (request->hasParam("en_pwm_mode"))
+    if (request->hasParam("en_pwm_mode", post))
     {
-        const String value = request->getParam("en_pwm_mode")->value();
+        const String value = request->getParam("en_pwm_mode", post)->value();
         if (value.length() == 1)
         {
             motorConfig.en_pwm_mode = bool(value.toInt());
         }
     }
-    if (request->hasParam("pwm_autoscale"))
+    if (request->hasParam("pwm_autoscale", post))
     {
-        const String value = request->getParam("pwm_autoscale")->value();
+        const String value = request->getParam("pwm_autoscale", post)->value();
         if (value.length() == 1)
         {
             motorConfig.pwm_autoscale = bool(value.toInt());
         }
     }
-    if (request->hasParam("invertDirection"))
+    if (request->hasParam("reverseDirection", post))
     {
-        const String value = request->getParam("invertDirection")->value();
+        const String value = request->getParam("reverseDirection", post)->value();
         if (value.length() == 1)
         {
-            motorConfig.invertDirection = bool(value.toInt());
+            motorConfig.reverseDirection = bool(value.toInt());
         }
     }
-    if (request->hasParam("pwm_autograd"))
+    if (request->hasParam("pwm_autograd", post))
     {
-        const String value = request->getParam("pwm_autograd")->value();
+        const String value = request->getParam("pwm_autograd", post)->value();
         if (value.length() == 1)
         {
             motorConfig.pwm_autograd = bool(value.toInt());
         }
     }
-    if (request->hasParam("SGT"))
+    if (request->hasParam("SGT", post))
     {
-        motorConfig.SGT = constrain(request->getParam("SGT")->value().toInt(), -64, 63);
+        motorConfig.SGT = constrain(request->getParam("SGT", post)->value().toInt(), -64, 63);
     }
-    if (request->hasParam("sfilt"))
+    if (request->hasParam("sfilt", post))
     {
-        const String value = request->getParam("sfilt")->value();
+        const String value = request->getParam("sfilt", post)->value();
         if (value.length() == 1)
         {
             motorConfig.sfilt = bool(value.toInt());
         }
     }
-    if (request->hasParam("sg_stop"))
+    if (request->hasParam("sg_stop", post))
     {
-        const String value = request->getParam("sg_stop")->value();
+        const String value = request->getParam("sg_stop", post)->value();
         if (value.length() == 1)
         {
             motorConfig.sg_stop = bool(value.toInt());
         }
     }
-    if (request->hasParam("TPWMTHRS_RPM"))
+    if (request->hasParam("TPWMTHRS_RPM", post))
     {
-        motorConfig.TPWMTHRS_RPM = constrain(request->getParam("TPWMTHRS_RPM")->value().toFloat(), 0.0, 1000);
+        motorConfig.TPWMTHRS_RPM = constrain(request->getParam("TPWMTHRS_RPM", post)->value().toFloat(), 0.0, 1000);
     }
-    if (request->hasParam("chm"))
+    if (request->hasParam("chm", post))
     {
-        const String value = request->getParam("chm")->value();
+        const String value = request->getParam("chm", post)->value();
         if (value.length() == 1)
         {
             motorConfig.chm = bool(value.toInt());
         }
     }
-    if (request->hasParam("TCOOLTHRS_RPM"))
+    if (request->hasParam("TCOOLTHRS_RPM", post))
     {
-        motorConfig.TCOOLTHRS_RPM = constrain(request->getParam("TCOOLTHRS_RPM")->value().toFloat(), 0.0, 1000);
+        motorConfig.TCOOLTHRS_RPM = constrain(request->getParam("TCOOLTHRS_RPM", post)->value().toFloat(), 0.0, 1000);
     }
-    if (request->hasParam("semin"))
+    if (request->hasParam("semin", post))
     {
-        motorConfig.semin = constrain(request->getParam("semin")->value().toInt(), 0, 15);
+        motorConfig.semin = constrain(request->getParam("semin", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("semax"))
+    if (request->hasParam("semax", post))
     {
-        motorConfig.semax = constrain(request->getParam("semax")->value().toInt(), 0, 15);
+        motorConfig.semax = constrain(request->getParam("semax", post)->value().toInt(), 0, 15);
     }
-    if (request->hasParam("THIGH_RPM"))
+    if (request->hasParam("THIGH_RPM", post))
     {
-        motorConfig.THIGH_RPM = constrain(request->getParam("THIGH_RPM")->value().toFloat(), 0.0, 1000);
+        motorConfig.THIGH_RPM = constrain(request->getParam("THIGH_RPM", post)->value().toFloat(), 0.0, 1000);
     }
-    if (request->hasParam("vhighfs"))
+    if (request->hasParam("vhighfs", post))
     {
-        const String value = request->getParam("vhighfs")->value();
+        const String value = request->getParam("vhighfs", post)->value();
         if (value.length() == 1)
         {
             motorConfig.vhighfs = bool(value.toInt());
         }
     }
-    if (request->hasParam("vhighchm"))
+    if (request->hasParam("vhighchm", post))
     {
-        const String value = request->getParam("vhighchm")->value();
+        const String value = request->getParam("vhighchm", post)->value();
         if (value.length() == 1)
         {
             motorConfig.vhighchm = bool(value.toInt());
         }
     }
-    if (request->hasParam("VDCMIN_RPM"))
+    if (request->hasParam("VDCMIN_RPM", post))
     {
-        motorConfig.VDCMIN_RPM = constrain(request->getParam("VDCMIN_RPM")->value().toFloat(), 0.0, 1000);
+        motorConfig.VDCMIN_RPM = constrain(request->getParam("VDCMIN_RPM", post)->value().toFloat(), 0.0, 1000);
     }
-    if (request->hasParam("DC_TIME"))
+    if (request->hasParam("DC_TIME", post))
     {
-        motorConfig.DC_TIME = constrain(request->getParam("DC_TIME")->value().toInt(), 0, 1023);
+        motorConfig.DC_TIME = constrain(request->getParam("DC_TIME", post)->value().toInt(), 0, 1023);
     }
-    if (request->hasParam("DC_SG"))
+    if (request->hasParam("DC_SG", post))
     {
-        motorConfig.DC_SG = constrain(request->getParam("DC_SG")->value().toInt(), 0, 255);
+        motorConfig.DC_SG = constrain(request->getParam("DC_SG", post)->value().toInt(), 0, 255);
     }
-    if (request->hasParam("was_min"))
+    if (request->hasParam("was_min", post))
     {
-        motorConfig.was_min = constrain(request->getParam("was_min")->value().toInt(), 0, pow(2, 12) - 1);
+        motorConfig.wasMin = constrain(request->getParam("was_min", post)->value().toInt(), 0, pow(2, 12) - 1);
     }
-    if (request->hasParam("was_center"))
+    if (request->hasParam("was_center", post))
     {
-        motorConfig.was_center = constrain(request->getParam("was_center")->value().toInt(), 0, pow(2, 12) - 1);
+        motorConfig.wasCenter = constrain(request->getParam("was_center", post)->value().toInt(), 0, pow(2, 12) - 1);
     }
-    if (request->hasParam("was_max"))
+    if (request->hasParam("was_max", post))
     {
-        motorConfig.was_max = constrain(request->getParam("was_max")->value().toInt(), 0, pow(2, 12) - 1);
+        motorConfig.wasMax = constrain(request->getParam("was_max", post)->value().toInt(), 0, pow(2, 12) - 1);
     }
-    if (request->hasParam("pid_P"))
+    if (request->hasParam("pid_P", post))
     {
-        motorConfig.pid_P = constrain(request->getParam("pid_P")->value().toFloat(), 0, 100);
+        motorConfig.pidP = constrain(request->getParam("pid_P", post)->value().toFloat(), 0, 100);
     }
-    if (request->hasParam("pid_I"))
+    if (request->hasParam("pid_I", post))
     {
-        motorConfig.pid_I = constrain(request->getParam("pid_I")->value().toFloat(), 0, 100);
+        motorConfig.pidI = constrain(request->getParam("pid_I", post)->value().toFloat(), 0, 100);
     }
-    if (request->hasParam("pid_D"))
+    if (request->hasParam("pid_D", post))
     {
-        motorConfig.pid_D = constrain(request->getParam("pid_D")->value().toFloat(), 0, 100);
+        motorConfig.pidD = constrain(request->getParam("pid_D", post)->value().toFloat(), 0, 100);
     }
 
     if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)
@@ -410,6 +413,10 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request)
     motorConfig.printToStreamPretty(&Serial);
     Serial.println();
     sendMotorConfig();
+
+    char serialized[1024];
+    serializeJson(motorConfig.json(), serialized);
+    sendMessageToEvents(serialized, "motor_config");
 }
 
 void onUpdateMotorConfigLocal(AsyncWebServerRequest *request)
@@ -419,22 +426,73 @@ void onUpdateMotorConfigLocal(AsyncWebServerRequest *request)
 }
 void onUpdateMotorConfigRemote(AsyncWebServerRequest *request)
 {
-    onUpdateMotorConfig(request);
+    onUpdateMotorConfig(request, request->method() == HTTP_POST);
     request->send(200, "text/plain", "Motor config updated.");
+}
+
+void sendMessageToEvents(char *message, const char *channel)
+{
+    events->send(message, channel, millis());
+}
+
+
+// Rounds a number to a certain number of decimals.
+float roundToNumberOfDecimals(float value, int numDecimals)
+{
+    int sign = (value > 0) - (value < 0);
+
+    return (int)(value * pow(10, numDecimals) - sign * 0.5) / (pow(10.0, numDecimals));
+}
+
+JsonDocument getSensorData()
+{
+    JsonDocument data;
+    data["was"] = teensyHardwareState.wasReading;
+    data["was_min"] = motorConfig.wasMin;
+    data["was_center"] = motorConfig.wasCenter;
+    data["was_max"] = motorConfig.wasMax;
+    data["motor_enabled"] = teensyHardwareState.motorEnabled;
+    data["motor_stalled"] = teensyHardwareState.motorStalled;
+    data["motor_rpm"] = roundToNumberOfDecimals(teensyHardwareState.rpm, 3);
+    data["motor_sg"] = teensyHardwareState.stallguardResult;
+    data["motor_cs"] = teensyHardwareState.currentScale;
+    // data["motor_pos"] = teensyHardwareState.motorPos;
+    data["was_target"] = teensyHardwareState.wasTarget;
+    // data["was_change_rate"] = (int)wasChangeRate;
+    // data["was_error_over_time"] = (int)wasErrorOverTime;
+
+    return data;
+}
+
+void sendPeriodicDataToEvents()
+{
+    if (webEventsDataElapsedTime > 33333)
+    {
+        JsonDocument data = getSensorData();
+        int size = measureJson(data);
+
+        char serialized[512];
+        serializeJson(data, serialized);
+        sendMessageToEvents(serialized, "data");
+
+        webEventsDataElapsedTime = 0;
+    }
 }
 
 void addTeensyCallbacksToWebServer()
 {
     webServer->on("/firmware", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send_P(200, "text/html", firmware_html, firmwareWithTeensyProcessor); });
+                  { request->send(200, "text/html", firmware_html, firmwareWithTeensyProcessor); });
     webServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
     bool success = getTeensyUptime(true);
-    request->send_P(200, "text/html", status_html, statusWithTeensyProcessor); });
+    request->send(200, "text/html", status_html, statusWithTeensyProcessor); });
     webServer->on("/motor", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send_P(200, "text/html", motor_html, motorProcessor); });
+                  { request->send(200, "text/html", motor_html, motorProcessor); });
 
     webServer->on("/update_motor_config", HTTP_GET, onUpdateMotorConfigRemote);
+    webServer->on("/update_motor_config_post", HTTP_POST, onUpdateMotorConfigRemote);
+
     webServer->on("/update_motor_config_local", HTTP_GET, onUpdateMotorConfigLocal);
 
     webServer->on("/motor_config.json", HTTP_GET, [](AsyncWebServerRequest *request)

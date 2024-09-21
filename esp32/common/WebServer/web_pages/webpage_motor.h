@@ -59,7 +59,7 @@ const char motor_html[] PROGMEM = R"rawliteral(
                 href="https://www.analog.com/media/en/technical-documentation/data-sheets/TMC5160A_datasheet_rev1.18.pdf">
                 Link to TMC5160 documentation pdf</a>
         </p>
-        <form action="/update_motor_config">
+        <form action="/update_motor_config_post" id="motor_config_form">
             <table>
                 <tr>
                     <th>Parameter</th>
@@ -96,9 +96,107 @@ const char motor_html[] PROGMEM = R"rawliteral(
                         </button>
                     </td>
                 </tr>
-
             </table>
         </form>
+        <table>
+            <tr>
+                <td>
+                    <h4>WAS reading</h4>
+                </td>
+                <td>
+                    <p, id="was_reading">????</p>
+                </td>
+                <td>
+                    <input type="range" min="0" max="4095" value="0" class="slider" id="was_reading_slider">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>WAS target</h4>
+                </td>
+                <td>
+                    <p, id="was_target">????</p>
+                </td>
+                <td>
+                    <input type="range" min="0" max="4095" value="0" class="slider" id="was_target_slider" oninput="updateWasTargetSlider()">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>WAS change rate</h4>
+                </td>
+                <td>
+                    <p, id="was_change_rate">????</p>
+                </td>
+            </tr><tr>
+                <td>
+                    <h4>WAS error over time</h4>
+                </td>
+                <td>
+                    <p, id="was_error_over_time">????</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor</h4>
+                </td>
+                <td>
+                    Override <input type="checkbox" id="motor_override_control" onclick="toggleMotorOverride()">
+                </td>
+                <td>
+                    <p, id="motor_enabled">????</p>
+                </td>
+                <td>
+                    <input type="checkbox" id="motor_enabled_checkbox">
+                </td>
+                <td>
+                    <button onclick="toggleMotor()" id="motor_toggle_button">Toggle Motor</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor stalled</h4>
+                </td>
+                <td>
+                    <p, id="motor_stalled">????</p>
+                </td>
+                <td>
+                    <input type="checkbox" id="motor_stalled_checkbox">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor RPM</h4>
+                </td>
+                <td>
+                    <p, id="motor_rpm">????</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor CS</h4>
+                </td>
+                <td>
+                    <p, id="motor_cs">????</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor StallGuard</h4>
+                </td>
+                <td>
+                    <p, id="motor_sg">????</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Motor Position</h4>
+                </td>
+                <td>
+                    <p, id="motor_pos">????</p>
+                </td>
+            </tr>
+        </table>
     </div>
     <script>
         function toggleCheckbox(element) {
@@ -106,6 +204,124 @@ const char motor_html[] PROGMEM = R"rawliteral(
             if (element.checked) { xhr.open("GET", "/update_motor_config?" + element.id + "=1", true); }
             else { xhr.open("GET", "/update_motor_config?" + element.id + "=0", true); }
             xhr.send();
+        }
+
+        motor_config_form.onsubmit=async(e)=>{
+            e.preventDefault();
+            let response = await fetch('/update_motor_config_post', {
+                method:'POST', 
+                body:new FormData(motor_config_form)
+            });
+        };
+
+        function updateWasTargetSlider() {
+                document.getElementById('was_target').innerHTML = document.getElementById('was_target_slider').value;
+        }
+        
+        var motorEnabled = false;
+        var tryToEnableMotor = false;
+        var overrideMotorControl = false;
+        function toggleMotorOverride(){
+            overrideMotorControl=!overrideMotorControl;
+            document.getElementById('motor_override_control').checked=overrideMotorControl;
+        }
+
+        function toggleMotor() {
+            tryToEnableMotor = !tryToEnableMotor;
+            document.getElementById('motor_toggle_button').innerHTML = !tryToEnableMotor ? 'Enable' : 'Disable';
+        }
+        document.getElementById('motor_toggle_button').innerHTML = !tryToEnableMotor ? 'Enable' : 'Disable';
+
+        setInterval(() => {
+            if ((motorEnabled||tryToEnableMotor) && overrideMotorControl){
+                var xhr = new XMLHttpRequest();
+                data = {};
+                data['enable_motor'] = tryToEnableMotor;
+                data['was_target'] = document.getElementById('was_target_slider').value;
+                xhr.open("GET", "/motor_control?data="+encodeURIComponent(JSON.stringify(data)), true);
+                xhr.timeout=450;
+                xhr.ontimeout=()=>{console.log('Motor control request failed.')};
+                xhr.send();
+            }
+        }, 500);
+
+        var eventsSeenBefore = false;
+        if (!!window.EventSource) {
+            var source = new EventSource('/events');
+
+            source.addEventListener('open', function (e) {
+                console.log("Events Connected");
+                if (eventsSeenBefore) {
+                    location.reload();
+                }
+                eventsSeenBefore = true;
+            }, false);
+
+            source.addEventListener('error', function (e) {
+                if (e.target.readyState != EventSource.OPEN) {
+                    console.log("Events Disconnected");
+                }
+            }, false);
+
+            source.addEventListener('message', function (e) {
+                console.log("message", e.data);
+            }, false);
+
+            source.addEventListener('data', function (e) {
+                var data = JSON.parse(e.data);
+                // console.log("data", data);
+                document.getElementById('was_reading').innerHTML = data['was'];
+                document.getElementById('was_reading_slider').value = data['was'];
+
+                document.getElementById('was_target_slider').min = data['was_min'];
+                document.getElementById('was_target_slider').max = data['was_max'];
+
+                if (!overrideMotorControl){
+                    document.getElementById('was_target').innerHTML = data['was_target'];
+                    document.getElementById('was_target_slider').value = data['was_target'];
+                }
+                
+                motorEnabled=data['motor_enabled'];
+
+                document.getElementById('motor_enabled').innerHTML = motorEnabled ? 'Enabled' : 'Disabled';
+                document.getElementById('motor_enabled_checkbox').checked = motorEnabled;
+
+                document.getElementById('motor_stalled').innerHTML = data['motor_stalled'] ? 'Stalled' : '';
+                document.getElementById('motor_stalled_checkbox').checked = data['motor_stalled'];
+
+                document.getElementById('motor_rpm').innerHTML = data['motor_rpm'].toFixed(2);
+                document.getElementById('motor_cs').innerHTML = data['motor_cs'];
+                document.getElementById('motor_sg').innerHTML = data['motor_sg'];
+                document.getElementById('motor_pos').innerHTML = data['motor_pos']; 
+                document.getElementById('was_change_rate').innerHTML = data['was_change_rate']; 
+                document.getElementById('was_error_over_time').innerHTML = data['was_error_over_time'];
+
+            }, false);
+
+            source.addEventListener('motor_config', function (e) {
+                var data = JSON.parse(e.data);
+                // console.log("motor_config", data);
+                for (var key in data){
+                    if (typeof(data[key])=='boolean'){
+                        document.getElementById(key).checked=data[key];
+                    }else if (key=='MICRO_STEPS'){
+                        var values = [0,2,4,8,16,32,64,128,256];
+                        for (var index in values){
+                            document.getElementById('micro_steps_'+values[index]).checked = values[index] == data[key];
+                        }
+                    }
+                    else if (key=='STEPS_PER_ROT'){
+                        var values = [200,400];
+                        for (var index in values) {
+                            document.getElementById('steps_per_rot_'+values[index]).checked = values[index] == data[key];
+                        }
+                    }   
+                    else{
+                    document.getElementById(key).value=data[key];
+                    }
+                }
+            }, false);
+            
         }
     </script>
 </body>

@@ -20,4 +20,8 @@
 
 void addTeensyCallbacksToWebServer();
 
+void sendMessageToEvents(char *message, const char *channel);
+
+void sendPeriodicDataToEvents();
+
 #endif
