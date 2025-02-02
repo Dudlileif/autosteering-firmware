@@ -105,7 +105,7 @@ void updateStepperDriverConfig()
     stepper.VSTART(motorConfig.VSTART);
     stepper.VSTOP(motorConfig.VSTOP);
     stepper.AMAX(accelerationFromRPMS(motorConfig.AMAX_RPM_S));
-    stepper.DMAX(accelerationFromRPMS(motorConfig.AMAX_RPM_S));
+    stepper.DMAX(accelerationFromRPMS(motorConfig.DMAX_RPM_S));
     stepper.v1(velocityFromRPM(motorConfig.VMAX_RPM / 2));
     stepper.a1(accelerationFromRPMS(motorConfig.AMAX_RPM_S / 2));
     stepper.d1(accelerationFromRPMS(motorConfig.AMAX_RPM_S / 2));
@@ -372,6 +372,7 @@ void updateStepper()
                 {
                     mode = mode == positive ? negative : positive;
                 }
+                stepper.AMAX(accelerationFromRPMS(stepperVMax < abs(stepper.VACTUAL()) ? motorConfig.DMAX_RPM_S : motorConfig.AMAX_RPM_S));
                 stepper.VMAX(motorEnabled ? stepperVMax : 0);
                 stepper.RAMPMODE(mode);
             }

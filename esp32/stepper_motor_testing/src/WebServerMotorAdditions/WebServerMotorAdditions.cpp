@@ -70,7 +70,7 @@ String motorProcessor(const String &var)
             {
                 form += numberForm(key, key, key, 0, 255, uint8_t(kv.value()), motorConfig.getDescription(key));
             }
-            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S")
+            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S" || key == "DMAX_RPM_S")
             {
                 form += numberForm(key, key, key, 0.0, 1000.0, 1.0, float(kv.value()), motorConfig.getDescription(key));
             }
@@ -153,6 +153,10 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
     if (request->hasParam("AMAX_RPM_S", post))
     {
         motorConfig.AMAX_RPM_S = constrain(request->getParam("AMAX_RPM_S", post)->value().toFloat(), 0.0, 3597);
+    }
+    if (request->hasParam("DMAX_RPM_S", post))
+    {
+        motorConfig.DMAX_RPM_S = constrain(request->getParam("DMAX_RPM_S", post)->value().toFloat(), 0.0, 3597);
     }
     if (request->hasParam("VMAX_RPM", post))
     {

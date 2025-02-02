@@ -26,6 +26,7 @@
 
 #define DEFAULT_REVERSE_DIRECTION false
 #define DEFUALT_AMAX_RPM_S 100
+#define DEFAULT_DMAX_RPM_S 200
 #define DEFAULT_VMAX_RPM 200
 #define DEFAULT_VSTOP 10
 #define DEFAULT_VSTART 0
@@ -119,6 +120,13 @@ public:
      * Ramp Generator Motion Control Register Set AMAX in driver docs.
      */
     float AMAX_RPM_S;
+
+    /**
+     * Maximum deceleration, RPM/s.
+     *
+     * Ramp Generator Motion Control Register Set AMAX in driver docs.
+     */
+    float DMAX_RPM_S;
 
     /**
      * Maximum RPM (RPM=MICRO_STEPS/VMAX), (micro)steps/s.
@@ -380,6 +388,7 @@ public:
     {
         reverseDirection = DEFAULT_REVERSE_DIRECTION;
         AMAX_RPM_S = DEFUALT_AMAX_RPM_S;
+        DMAX_RPM_S = DEFAULT_DMAX_RPM_S;
         VMAX_RPM = DEFAULT_VMAX_RPM;
         VSTOP = DEFAULT_VSTOP;
         VSTART = DEFAULT_VSTART;

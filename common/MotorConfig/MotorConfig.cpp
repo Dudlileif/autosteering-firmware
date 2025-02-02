@@ -57,6 +57,10 @@ bool MotorConfig::load(Stream *stream)
     {
         AMAX_RPM_S = savedConfig["AMAX_RPM_S"];
     }
+    if (savedConfig["DMAX_RPM_S"].is<float>())
+    {
+        DMAX_RPM_S = savedConfig["DMAX_RPM_S"];
+    }
     if (savedConfig["VMAX_RPM"].is<float>())
     {
         VMAX_RPM = savedConfig["VMAX_RPM"];
@@ -241,6 +245,7 @@ JsonDocument MotorConfig::json()
     jsonDocument["hold_multiplier"] = hold_multiplier;
     jsonDocument["freewheel"] = freewheel;
     jsonDocument["AMAX_RPM_S"] = AMAX_RPM_S;
+    jsonDocument["DMAX_RPM_S"] = DMAX_RPM_S;
     jsonDocument["VMAX_RPM"] = VMAX_RPM;
     jsonDocument["VSTOP"] = VSTOP;
     jsonDocument["VSTART"] = VSTART;
@@ -436,6 +441,10 @@ String MotorConfig::getDescription(String key)
     else if (key == "AMAX_RPM_S")
     {
         return "The maximum acceleration rate, in RPM/s.";
+    }
+    else if (key == "DMAX_RPM_S")
+    {
+        return "The maximum deceleration rate, in RPM/s. This is typically set to 2-5x of AMAX_RPM_S.";
     }
     else if (key == "pid_P")
     {
