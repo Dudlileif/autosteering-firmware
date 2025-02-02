@@ -213,6 +213,10 @@ bool MotorConfig::load(Stream *stream)
     {
         wasMax = savedConfig["was_max"];
     }
+    if (savedConfig["asymmetric_velocity"].is<bool>())
+    {
+        asymmetricVelocity = savedConfig["asymmetric_velocity"];
+    }
 
     Serial.println("Motor config loaded successfully.");
 
@@ -279,6 +283,7 @@ JsonDocument MotorConfig::json()
     jsonDocument["was_min"] = wasMin;
     jsonDocument["was_center"] = wasCenter;
     jsonDocument["was_max"] = wasMax;
+    jsonDocument["asymmetric_velocity"] = asymmetricVelocity;
 
     return jsonDocument;
 }
@@ -469,6 +474,10 @@ String MotorConfig::getDescription(String key)
     else if (key == "was_max")
     {
         return "Maximum reading value for the WAS (usually full right turn).";
+    }
+    else if (key == "asymmetric_velocity")
+    {
+        return "Whether the velocity should scale when the WAS is asymmetric, to immitate a symmetric system. This might be unnecessary if DMAX_RPM_S is sufficiently higher than AMAX_RPM_S.";
     }
 
     return "Description missing.";

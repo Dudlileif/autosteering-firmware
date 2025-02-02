@@ -270,17 +270,20 @@ float normalizeWasReading(uint16_t reading)
     return constrain(normalizedWasReading, 0.0, 1.0);
 }
 
-float shorterRangeCoefficient(uint16_t reading)
+float asymmetricCoefficient(uint16_t reading)
 {
-    float leftSide = float(motorConfig.wasCenter - motorConfig.wasMin);
-    float rightSide = float(motorConfig.wasMax - motorConfig.wasCenter);
-    if (reading < motorConfig.wasCenter && leftSide < rightSide)
+    if (motorConfig.asymmetricVelocity)
     {
-        return leftSide / rightSide;
-    }
-    else if (reading > motorConfig.wasCenter && rightSide < leftSide)
-    {
-        return rightSide / leftSide;
+        float leftSide = float(motorConfig.wasCenter - motorConfig.wasMin);
+        float rightSide = float(motorConfig.wasMax - motorConfig.wasCenter);
+        if (reading < motorConfig.wasCenter && leftSide < rightSide)
+        {
+            return leftSide / rightSide;
+        }
+        else if (reading > motorConfig.wasCenter && rightSide < leftSide)
+        {
+            return rightSide / leftSide;
+        }
     }
     return 1;
 }
@@ -364,7 +367,7 @@ void updateStepper()
 
                 float normalizedTarget = normalizeWasReading(wasTarget);
                 float pidValue = pidController.next(normalizedTarget - normalizedReading);
-                velocityGain = constrain(pidValue, -1, 1) * shorterRangeCoefficient(wasReading);
+                velocityGain = constrain(pidValue, -1, 1) * asymmetricCoefficient(wasReading);
 
                 stepperVMax = abs(velocityGain) * velocityFromRPM(motorConfig.VMAX_RPM);
                 StepperRampMode mode = velocityGain >= 0 ? positive : negative;

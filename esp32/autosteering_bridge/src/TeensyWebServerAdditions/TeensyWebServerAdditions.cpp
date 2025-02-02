@@ -76,7 +76,7 @@ String motorProcessor(const String &var)
         {
             String key = String(kv.key().c_str());
             // Filter boolean parameters
-            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "reverseDirection")
+            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "reverseDirection" || key == "asymmetric_velocity")
             {
                 form += checkboxForm(key, key, key, bool(kv.value()), "toggleCheckbox", motorConfig.getDescription(key));
             }
@@ -100,7 +100,7 @@ String motorProcessor(const String &var)
             {
                 form += numberForm(key, key, key, 0, 255, uint8_t(kv.value()), motorConfig.getDescription(key));
             }
-            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S")
+            else if (key == "VMAX_RPM" || key == "TPWMTHRS_RPM" || key == "TCOOLTHRS_RPM" || key == "THIGH_RPM" || key == "VDCMIN_RPM" || key == "AMAX_RPM_S" || key == "DMAX_RPM_S")
             {
                 form += numberForm(key, key, key, 0.0, 1000.0, 1.0, float(kv.value()), motorConfig.getDescription(key));
             }
@@ -209,6 +209,10 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
     if (request->hasParam("AMAX_RPM_S", post))
     {
         motorConfig.AMAX_RPM_S = constrain(request->getParam("AMAX_RPM_S", post)->value().toFloat(), 0.0, 3597);
+    }
+    if (request->hasParam("DMAX_RPM_S", post))
+    {
+        motorConfig.DMAX_RPM_S = constrain(request->getParam("DMAX_RPM_S", post)->value().toFloat(), 0.0, 3597);
     }
     if (request->hasParam("VMAX_RPM", post))
     {
@@ -401,6 +405,14 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
     if (request->hasParam("pid_D", post))
     {
         motorConfig.pidD = constrain(request->getParam("pid_D", post)->value().toFloat(), 0, 100);
+    }
+    if (request->hasParam("asymmetric_velocity", post))
+    {
+        const String value = request->getParam("asymmetric_velocity", post)->value();
+        if (value.length() == 1)
+        {
+            motorConfig.asymmetricVelocity = bool(value.toInt());
+        }
     }
 
     if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)

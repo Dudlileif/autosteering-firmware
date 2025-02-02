@@ -46,7 +46,7 @@ String motorProcessor(const String &var)
         {
             String key = String(kv.key().c_str());
             // Filter boolean parameters
-            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "reverseDirection")
+            if (key == "en_pwm_mode" || key == "pwm_autoscale" || key == "pwm_autograd" || key == "sfilt" || key == "sg_stop" || key == "chm" || key == "vhighfs" || key == "vhighchm" || key == "reverseDirection" || key == "asymmetric_velocity")
             {
                 form += checkboxForm(key, key, key, bool(kv.value()), "toggleCheckbox", motorConfig.getDescription(key));
             }
@@ -349,6 +349,14 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
     if (request->hasParam("pid_D", post))
     {
         motorConfig.pidD = constrain(request->getParam("pid_D", post)->value().toFloat(), 0, 100);
+    }
+    if (request->hasParam("asymmetric_velocity", post))
+    {
+        const String value = request->getParam("asymmetric_velocity", post)->value();
+        if (value.length() == 1)
+        {
+            motorConfig.asymmetricVelocity = bool(value.toInt());
+        }
     }
 
     if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)

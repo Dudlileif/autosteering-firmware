@@ -68,6 +68,8 @@
 #define WAS_CENTER 2000
 #define WAS_MAX 3750
 
+#define DEFAULT_ASYMMETRIC_VELOCITY false
+
 /**
  * A configuration class for coniguring a TMC5160 driver and the connected
  * stepper motor.
@@ -382,6 +384,12 @@ public:
     uint16_t wasMax;
 
     /**
+     * Whether the velocity should scale when the WAS is asymmetric, to immitate a symmetric system.
+     * This might be unnecessary if DMAX_RPM_S is sufficiently higher than AMAX_RPM_S.
+     */
+    bool asymmetricVelocity;
+
+    /**
      * Default constructor, all parameters are set to the default values.
      */
     MotorConfig()
@@ -426,6 +434,7 @@ public:
         wasMin = WAS_MIN;
         wasCenter = WAS_CENTER;
         wasMax = WAS_MAX;
+        asymmetricVelocity = DEFAULT_ASYMMETRIC_VELOCITY;
     };
     /**
      * Default deconstructor.
