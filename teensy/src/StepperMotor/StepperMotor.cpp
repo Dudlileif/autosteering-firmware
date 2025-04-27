@@ -331,7 +331,7 @@ void updateStepper()
                             calibrationTarget = 0;
                         }
                     }
-                    velocityGain = constrain(pidController.next(calibrationTarget - normalizedReading), -1, 1) * shorterRangeCoefficient(wasReading);
+                    velocityGain = constrain(pidController.next(calibrationTarget - normalizedReading), -1, 1) * asymmetricCoefficient(wasReading);
                 }
                 else
                 {
