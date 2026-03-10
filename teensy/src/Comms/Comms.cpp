@@ -35,20 +35,21 @@ enum MessageType
 {
     none,
     rtcm,
-    json
+    json,
+    gnssConfig
 };
 
 char serialMessage[1024];
 uint16_t serialMessageLength = 0;
 MessageType serialMessageType = none;
-uint16_t serialMessageRtcmLength = 0;
+uint16_t serialMessageExpectedLength = 0;
 uint8_t serialMessageBracketOpenCount = 0;
 uint8_t serialMessageBracketCloseCount = 0;
 
 char networkMessage[1024];
 uint16_t networkMessageLength = 0;
 MessageType networkMessageType = none;
-uint16_t networkMessageRtcmLength = 0;
+uint16_t networkMessageExpectedLength = 0;
 uint8_t networkMessageBracketOpenCount = 0;
 uint8_t networkMessageBracketCloseCount = 0;
 
@@ -220,7 +221,7 @@ void handleIncomingData(
     char *message,
     uint16_t &messageLength,
     MessageType &messageType,
-    uint16_t &messageRtcmLength,
+    uint16_t &messageExpectedLength,
     uint8_t &messageBracketOpenCount,
     uint8_t &messageBracketCloseCount)
 {
@@ -240,6 +241,13 @@ void handleIncomingData(
                 GNSS_SERIAL.write(byte);
                 return;
             }
+            // Look for first byte of GNSS config.
+           else if (byte == 0xD0){
+                messageType = gnssConfig;
+                message[0] = byte;
+                messageLength = 1;
+                return;
+           }
             // Look for first byte of a JSON document.
             else if (char(byte) == '{')
             {
@@ -270,8 +278,7 @@ void handleIncomingData(
             // Get length from packet header
             if (messageLength == 3)
             {
-
-                messageRtcmLength = (message[1] << 8 | message[2]);
+                messageExpectedLength = (message[1] << 8 | message[2]);
 
                 // Serial.println(message[1], BIN);
                 // Serial.print(message[1] << 8, BIN);
@@ -280,28 +287,58 @@ void handleIncomingData(
                 // Serial.print(message[1] << 8, 10);
                 // Serial.print(" + ");
                 // Serial.println(message[2], 10);
-                Serial.printf("RTCM length: %4d\n", messageRtcmLength);
-                if (messageRtcmLength > 1023)
+                Serial.printf("RTCM length: %4d\n", messageExpectedLength);
+                if (messageExpectedLength > 1023)
                 {
                     Serial.println("RTCM length too large, discarding.");
                     messageType = none;
-                    messageRtcmLength = 0;
+                    messageExpectedLength = 0;
                     messageLength = 0;
                 }
             }
-            else if (messageLength == (3 + messageRtcmLength + 3))
+            else if (messageLength == (3 + messageExpectedLength + 3))
             {
                 Serial.println("RTCM message end found.");
                 messageType = none;
-                messageRtcmLength = 0;
+                messageExpectedLength = 0;
                 messageLength = 0;
             }
-            else if (messageLength > (3 + messageRtcmLength + 3))
+            else if (messageLength > (3 + messageExpectedLength + 3))
             {
                 Serial.println("RTCM message end not found.");
                 messageType = none;
-                messageRtcmLength = 0;
+                messageExpectedLength = 0;
                 messageLength = 0;
+            }
+        }
+        else if (messageType == gnssConfig){
+            if(messageLength == 3){
+                messageExpectedLength = (message[1] << 8 | message[2]);
+
+                Serial.printf("GNSS config length length: %4d\n", messageExpectedLength);
+                if (messageExpectedLength > 1023)
+                {
+                    Serial.println("GNSS config length too large, discarding.");
+                    messageType = none;
+                    messageExpectedLength = 0;
+                    messageLength = 0;
+                }
+            }
+            else if (messageLength == (3 + messageExpectedLength)){
+                Serial.println("GNSS config message end found.");
+                messageType = none;
+                messageExpectedLength = 0;
+                messageLength = 0;
+            }
+             else if (messageLength > (3 + messageExpectedLength))
+            {
+                Serial.println("GNSS config message end not found.");
+                messageType = none;
+                messageExpectedLength = 0;
+                messageLength = 0;
+            }
+            else if(messageLength>3){
+                GNSS_SERIAL.write(byte);
             }
         }
         else if (messageType == json)
@@ -348,7 +385,7 @@ void receiveNetworkData()
         networkMessage,
         networkMessageLength,
         networkMessageType,
-        networkMessageRtcmLength,
+        networkMessageExpectedLength,
         networkMessageBracketOpenCount,
         networkMessageBracketCloseCount);
 }
@@ -360,7 +397,7 @@ void receiveUSBSerialData()
         serialMessage,
         serialMessageLength,
         serialMessageType,
-        serialMessageRtcmLength,
+        serialMessageExpectedLength,
         serialMessageBracketOpenCount,
         serialMessageBracketCloseCount);
 }
