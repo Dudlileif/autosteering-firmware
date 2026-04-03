@@ -64,11 +64,13 @@
 #define DEFAULT_PID_I 0.0
 #define DEFAULT_PID_D 0.0
 
-#define WAS_MIN 250
-#define WAS_CENTER 2000
-#define WAS_MAX 3750
+#define DEFAULT_WAS_MIN 250
+#define DEFAULT_WAS_CENTER 2000
+#define DEFAULT_WAS_MAX 3750
 
 #define DEFAULT_ASYMMETRIC_VELOCITY false
+
+#define DEFAULT_SENSOR_PERIOD_US 50000
 
 /**
  * A configuration class for coniguring a TMC5160 driver and the connected
@@ -390,6 +392,12 @@ public:
     bool asymmetricVelocity;
 
     /**
+     * The period in microseconds between each sensor reading. Defaults to 50000, which corresponds
+     * to 20 Hz.
+     */
+    uint32_t sensorPeriodUs;
+
+    /**
      * Default constructor, all parameters are set to the default values.
      */
     MotorConfig()
@@ -431,10 +439,11 @@ public:
         pidP = DEFAULT_PID_P;
         pidI = DEFAULT_PID_I;
         pidD = DEFAULT_PID_D;
-        wasMin = WAS_MIN;
-        wasCenter = WAS_CENTER;
-        wasMax = WAS_MAX;
+        wasMin = DEFAULT_WAS_MIN;
+        wasCenter = DEFAULT_WAS_CENTER;
+        wasMax = DEFAULT_WAS_MAX;
         asymmetricVelocity = DEFAULT_ASYMMETRIC_VELOCITY;
+        sensorPeriodUs = DEFAULT_SENSOR_PERIOD_US;
     };
     /**
      * Default deconstructor.

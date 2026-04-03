@@ -47,6 +47,7 @@ uint8_t bracketCloseCount = 0;
 
 TeensyHardwareState teensyHardwareState;
 
+String gnssNmeaGga;
 String gnssNmeaGns;
 String gnssNmeaGst;
 String gnssNmeaVtg;
@@ -361,7 +362,7 @@ void parseTeensyData(char byte)
                 gnssNmeaGns = nmea;
                 // Serial.printf("GNS: %s\n", gnssNmeaGns.c_str());
             }
-            else if (nmea.substring(3, 6) == String("GST"))
+            if (nmea.substring(3, 6) == String("GST"))
             {
                 gnssNmeaGst = nmea;
                 // Serial.printf("GST: %s\n", gnssNmeaGst.c_str());
@@ -371,8 +372,12 @@ void parseTeensyData(char byte)
                 gnssNmeaVtg = nmea;
                 // Serial.printf("VTG: %s\n", gnssNmeaVtg.c_str());
             }
+            if (nmea.substring(3, 6) == String("GGA") && nmea.substring(3, 7) != String("GGAH"))
+            {
+                gnssNmeaGga = nmea;
+                // Serial.printf("GGA: %s\n", gnssNmeaGga.c_str());
+            }
             sendUdpData(teensyMessage, messageLength);
-
             nmeaDelimiter = 0;
             messageLength = 0;
             messageType = none;

@@ -35,10 +35,6 @@ const int LED_PIN = 13;
 
 const int MOTOR_ENABLE_PIN = 2;
 
-const int SENSOR_PERIOD_US = 10000; // 100 Hz, higher might intervene with GNSS messages, might
-                                    // have to be lowered further when adding more sensors/data.
-                                    // Sets how often sensor messages get sent from the hardware.
-
 const int STEPPER_PERIOD_US = 20000; // 0.02 s
 
 const int STEPPER_COMMAND_UPDATE_US = 1000000; // 1 s Disable stepper motor if no command has been received

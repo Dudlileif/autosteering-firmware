@@ -68,13 +68,11 @@ void loop()
   }
 }
 
-const int SENSOR_PERIOD_US = 10000;
-
 elapsedMicros sensorPrevUpdateElapsedTime;
 
 void sendSensorDataUDP()
 {
-  if (sensorPrevUpdateElapsedTime > SENSOR_PERIOD_US)
+  if (sensorPrevUpdateElapsedTime > motorConfig.sensorPeriodUs)
   {
     JsonDocument data = getSensorData();
     int size = measureJson(data);

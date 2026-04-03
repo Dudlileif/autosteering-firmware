@@ -128,6 +128,10 @@ String motorProcessor(const String &var)
             {
                 form += numberForm(key, key, key, 0.0, 100.0, 0.001, float(kv.value()), motorConfig.getDescription(key));
             }
+            else if (key == "sensor_period_us")
+            {
+                form += numberForm(key, key, key, 0, pow(2, 32) - 1, uint32_t(kv.value()), motorConfig.getDescription(key));
+            }
             else if (key != "MICRO_STEPS" && key != "STEPS_PER_ROT")
             {
                 String missing = R"(
@@ -414,6 +418,10 @@ void onUpdateMotorConfig(AsyncWebServerRequest *request, bool post = false)
             motorConfig.asymmetricVelocity = bool(value.toInt());
         }
     }
+    if (request->hasParam("sensor_period_us", post))
+    {
+        motorConfig.sensorPeriodUs = constrain(request->getParam("sensor_period_us", post)->value().toInt(), 0, pow(2, 32) - 1);
+    }
 
     if (motorConfig.TOFF == 1 && motorConfig.TBL < 2)
     {
@@ -446,7 +454,6 @@ void sendMessageToEvents(char *message, const char *channel)
 {
     events->send(message, channel, millis());
 }
-
 
 // Rounds a number to a certain number of decimals.
 float roundToNumberOfDecimals(float value, int numDecimals)

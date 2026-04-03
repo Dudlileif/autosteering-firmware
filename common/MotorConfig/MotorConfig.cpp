@@ -217,6 +217,10 @@ bool MotorConfig::load(Stream *stream)
     {
         asymmetricVelocity = savedConfig["asymmetric_velocity"];
     }
+    if (savedConfig["sensor_period_us"].is<uint32_t>())
+    {
+        sensorPeriodUs = savedConfig["sensor_period_us"];
+    }
 
     Serial.println("Motor config loaded successfully.");
 
@@ -284,6 +288,7 @@ JsonDocument MotorConfig::json()
     jsonDocument["was_center"] = wasCenter;
     jsonDocument["was_max"] = wasMax;
     jsonDocument["asymmetric_velocity"] = asymmetricVelocity;
+    jsonDocument["sensor_period_us"] = sensorPeriodUs;
 
     return jsonDocument;
 }
@@ -478,6 +483,10 @@ String MotorConfig::getDescription(String key)
     else if (key == "asymmetric_velocity")
     {
         return "Whether the velocity should scale when the WAS is asymmetric, to immitate a symmetric system. This might be unnecessary if DMAX_RPM_S is sufficiently higher than AMAX_RPM_S.";
+    }
+    else if (key == "sensor_period_us")
+    {
+        return "The period in microseconds between sensor readings. Defaults to 50000, which corresponds to 20 Hz.";
     }
 
     return "Description missing.";

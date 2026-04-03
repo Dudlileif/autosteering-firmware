@@ -168,7 +168,7 @@ void sendToProgram(char *message, int messageSize)
 
 void sendSensorData()
 {
-    if (sensorPrevUpdateElapsedTime > SENSOR_PERIOD_US)
+    if (sensorPrevUpdateElapsedTime > motorConfig.sensorPeriodUs)
     {
         JsonDocument data = getSensorData();
         int size = measureJson(data);
@@ -242,12 +242,13 @@ void handleIncomingData(
                 return;
             }
             // Look for first byte of GNSS config.
-           else if (byte == 0xD0){
+            else if (byte == 0xD0)
+            {
                 messageType = gnssConfig;
                 message[0] = byte;
                 messageLength = 1;
                 return;
-           }
+            }
             // Look for first byte of a JSON document.
             else if (char(byte) == '{')
             {
@@ -311,8 +312,10 @@ void handleIncomingData(
                 messageLength = 0;
             }
         }
-        else if (messageType == gnssConfig){
-            if(messageLength == 3){
+        else if (messageType == gnssConfig)
+        {
+            if (messageLength == 3)
+            {
                 messageExpectedLength = (message[1] << 8 | message[2]);
 
                 Serial.printf("GNSS config length length: %4d\n", messageExpectedLength);
@@ -324,20 +327,22 @@ void handleIncomingData(
                     messageLength = 0;
                 }
             }
-            else if (messageLength == (3 + messageExpectedLength)){
+            else if (messageLength == (3 + messageExpectedLength))
+            {
                 Serial.println("GNSS config message end found.");
                 messageType = none;
                 messageExpectedLength = 0;
                 messageLength = 0;
             }
-             else if (messageLength > (3 + messageExpectedLength))
+            else if (messageLength > (3 + messageExpectedLength))
             {
                 Serial.println("GNSS config message end not found.");
                 messageType = none;
                 messageExpectedLength = 0;
                 messageLength = 0;
             }
-            else if(messageLength>3){
+            else if (messageLength > 3)
+            {
                 GNSS_SERIAL.write(byte);
             }
         }
