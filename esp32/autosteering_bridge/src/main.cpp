@@ -13,64 +13,56 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+// along with Autosteering Firmware.  If not, see
+// <https://www.gnu.org/licenses/>.
 
 #ifndef _MAIN_CPP
 #define _MAIN_CPP
 
-#include <main.h>
-#include <Network.h>
-#include <LittleFS.h>
-#include <WebServer.h>
-#include <OTAUpdate.h>
 #include "TeensyComms/TeensyComms.h"
 #include "TeensyOTAUpdateAdditions/TeensyOTAUpdateAdditions.h"
 #include "TeensyWebServerAdditions/TeensyWebServerAddtions.h"
+#include <LittleFS.h>
+#include <Network.h>
+#include <OTAUpdate.h>
+#include <WebServer.h>
+#include <main.h>
 
-void setup()
-{
-    pinMode(PRIORITY_MESSAGE_SIGNAL_PIN, OUTPUT);
-    digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
-    mainSetup();
-    addTeensyCallbacksToWebServer();
+void setup() {
+  pinMode(PRIORITY_MESSAGE_SIGNAL_PIN, OUTPUT);
+  digitalWrite(PRIORITY_MESSAGE_SIGNAL_PIN, HIGH);
+  TEENSY_SERIAL.setRxBufferSize(1024);
+  TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
 
-    TEENSY_SERIAL.setRxBufferSize(1024);
-    TEENSY_SERIAL.begin(TEENSY_BAUD, SERIAL_8N1, RXD2, TXD2);
-    motorConfig.loadFromFile(&LittleFS);
+  mainSetup([](AsyncUDPPacket packet) {
+    TEENSY_SERIAL.write(packet.data(), packet.length());
+  });
+  addTeensyCallbacksToWebServer();
 
-    Serial.println("Saved Motor config json:");
-    motorConfig.printToStreamPretty(&Serial);
+  motorConfig.loadFromFile(&LittleFS);
 
-    delay(100);
+  Serial.println("Saved Motor config json:");
+  motorConfig.printToStreamPretty(&Serial);
 
-    sendMotorConfig();
+  delay(100);
 
-    getTeensyCrashReport(true);
+  sendMotorConfig();
 
-    getTeensyFirmwareVersion(true);
+  getTeensyCrashReport(true);
+
+  getTeensyFirmwareVersion(true);
 }
-    
-void loop()
-{
-    if (doUpdate && updateFileName.endsWith(".hex"))
-    {
-        attemptTeensyUpdate();
-    }
-    if (mainLoop())
-    {
-        readTeensySerial();
 
-        // UDP maxes out at 1460
-        char udpPacketBuffer[1460];
+void loop() {
+  if (doUpdate && updateFileName.endsWith(".hex")) {
+    attemptTeensyUpdate();
+  }
+  if (mainLoop()) {
+    readTeensySerial();
 
-        int udpPacketSize = receiveUdpPacket(udpPacketBuffer);
-        if (udpPacketSize > 0)
-        {
-            TEENSY_SERIAL.write(udpPacketBuffer, udpPacketSize);
-        }
-        sendPeriodicDataToEvents();
+    sendPeriodicDataToEvents();
 
-        checkIfTeensyIsResponding();
-    }
+    checkIfTeensyIsResponding();
+  }
 }
 #endif

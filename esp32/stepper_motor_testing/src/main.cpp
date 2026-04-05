@@ -13,25 +13,31 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+// along with Autosteering Firmware.  If not, see
+// <https://www.gnu.org/licenses/>.
 
 #ifndef _MAIN_CPP
 #define _MAIN_CPP
 
-#include <main.h>
-#include <Network.h>
 #include <LittleFS.h>
+#include <Network.h>
+#include <main.h>
 
 #include "Config/Config.h"
+#include "Sensors/Sensors.h"
 #include "StepperMotor/StepperMotor.h"
 #include "WebServerMotorAdditions/WebServerMotorAdditions.h"
-#include "Sensors/Sensors.h"
 
 void sendSensorDataUDP();
 
-void setup()
-{
-  mainSetup();
+void setup() {
+  mainSetup([](AsyncUDPPacket packet) {
+    JsonDocument document;
+    deserializeJson(document, packet.data(), packet.length());
+    if (document.size() > 0) {
+      handleMotorControls(document);
+    }
+  });
   initSensors();
   stepperInit();
   addMotorCallbacksToWebServer();
@@ -43,45 +49,25 @@ void setup()
   delay(100);
 }
 
-void loop()
-{
-  if (mainLoop())
-  {
+void loop() {
+  if (mainLoop()) {
     updateStepper();
     sendPeriodicDataToEvents();
     sendSensorDataUDP();
     uint8_t buffer[512];
-
-    // UDP maxes out at 1460
-    char udpPacketBuffer[1460];
-
-    int udpPacketSize = receiveUdpPacket(udpPacketBuffer);
-    if (udpPacketSize > 0)
-    {
-      JsonDocument document;
-      deserializeJson(document, udpPacketBuffer, udpPacketSize);
-      if (document.size() > 0)
-      {
-        handleMotorControls(document);
-      }
-    }
   }
 }
 
 elapsedMicros sensorPrevUpdateElapsedTime;
 
-void sendSensorDataUDP()
-{
-  if (sensorPrevUpdateElapsedTime > motorConfig.sensorPeriodUs)
-  {
+void sendSensorDataUDP() {
+  if (sensorPrevUpdateElapsedTime > motorConfig.sensorPeriodUs) {
     JsonDocument data = getSensorData();
     int size = measureJson(data);
-    if (size > 4)
-    {
+    if (size > 4) {
       char serialized[256];
       serializeJson(data, serialized);
-      if (char(serialized[0]) == '{' && char(serialized[size - 1]) == '}')
-      {
+      if (char(serialized[0]) == '{' && char(serialized[size - 1]) == '}') {
         sendUdpData(serialized, size);
         sensorPrevUpdateElapsedTime = 0;
       }

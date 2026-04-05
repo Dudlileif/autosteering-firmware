@@ -29,7 +29,7 @@
 #include "../OTAUpdate/OTAUpdate.h"
 #include "../Network/Network.h"
 
-void mainSetup()
+void mainSetup(AuPacketHandlerFunction onPacketCallback)
 {
 #ifndef STEPPER_MOTOR_TESTING
     pinMode(WIFI_LED_R, OUTPUT);
@@ -43,9 +43,6 @@ void mainSetup()
     Serial.printf("ESP32 firmware version: %s | %s | %s\n", FIRMWARE_TYPE, VERSION, BUILD_TIMESTAMP);
     wifiConfig.load(&LittleFS);
 
-    Serial.printf("UDP ports:\n\tSend: %d\n\tRecieve: %d\n", wifiConfig.udpSendPort, wifiConfig.udpReceivePort);
-    Serial.printf("TCP ports:\n\tSend: %d\n\tRecieve: %d\n", wifiConfig.tcpSendPort, wifiConfig.tcpReceivePort);
-
     Serial.println("Saved WiFi config json:");
     wifiConfig.printToStreamPretty(&Serial);
 
@@ -57,7 +54,7 @@ void mainSetup()
     {
         startWiFiClient();
     }
-    receiveUDP.begin(wifiConfig.udpReceivePort);
+    setupUDP(onPacketCallback);
     setupTCP();
     startWebServer();
 }
