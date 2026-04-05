@@ -33,9 +33,6 @@ String networkForm(uint16_t i, String initialSSID, String initialPassword)
   String network = R"(
     <tr>
       <td>
-        <h4>Network %I+1%</h4>
-      </td>
-      <td>
         <input type="text" maxlength=32 name="ssid_%I%" id="ssid_%I%" value="%SSID%">    
       </td>
       <td>
@@ -219,15 +216,25 @@ String networkProcessor(const String &var)
     String form = R"(
       <tr>
         <td>
+          SSID
+        </td>
+        <td>
           <input type="text" maxlength=32 name="ssid_ap" id="ssid_ap" value="%SSID%">
+        </td>
+      </tr> 
+       <tr>
+        <td>
+          Password
         </td>
         <td>
           <input type="password" maxlength=32 name="password_ap" id="password_ap" value="%PASSWORD%">
         </td>
-        <td>
+      </tr> 
+      <tr>
+        <td colspan="2">
           <input type="submit" value="Submit">
         </td>
-      </tr> 
+      </tr>
       )";
     form.replace("%SSID%", wifiConfig.apSSID);
     form.replace("%PASSWORD%", wifiConfig.apPassword);
@@ -276,6 +283,24 @@ String networkProcessor(const String &var)
     form += numberForm("TCP send", "tcp_send_port", "tcp_send_port", 0, 65535, wifiConfig.tcpSendPort);
     form += numberForm("UDP receive", "udp_receive_port", "udp_receive_port", 0, 65535, wifiConfig.udpReceivePort);
     form += numberForm("UDP send", "udp_send_port", "udp_send_port", 0, 65535, wifiConfig.udpSendPort);
+
+    return form;
+  }
+  if (var == "MULTICAST_ADDRESS_PLACEHOLDER")
+  {
+    String form = R"(
+      <tr>
+        <td>
+          <input type="text" maxlength=32 name="multicast_send_ip" id="multicast_send_ip" value="%SEND%">
+        </td>
+        <td>
+          <input type="text" maxlength=32 name="multicast_receive_ip" id="multicast_receive_ip" value="%RECEIVE%">
+        </td>
+      </tr> 
+      )";
+
+    form.replace("%SEND%", wifiConfig.multicastSendIp);
+    form.replace("%RECEIVE%", wifiConfig.multicastReceiveIp);
 
     return form;
   }
@@ -564,6 +589,14 @@ void onUpdateNetworkConfig(AsyncWebServerRequest *request)
   if (request->hasParam("udp_send_port"))
   {
     wifiConfig.udpSendPort = request->getParam("udp_send_port")->value().toInt();
+  }
+  if (request->hasParam("multicast_send_ip"))
+  {
+    strlcpy(wifiConfig.multicastSendIp, request->getParam("multicast_send_ip")->value().c_str(), 32);
+  }
+  if (request->hasParam("multicast_receive_ip"))
+  {
+    strlcpy(wifiConfig.multicastReceiveIp, request->getParam("multicast_receive_ip")->value().c_str(), 32);
   }
 #ifdef BASE_STATION_RELAY
   if (request->hasParam("rtk_base_station_address"))

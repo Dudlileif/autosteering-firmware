@@ -28,9 +28,12 @@ const char network_html[] PROGMEM = R"rawliteral(
             padding-left: 1rem;
             padding-right: 1rem;
             padding-top: 1rem;
-            padding-right: 1rem;
+            padding-bottom: 10rem;
             margin: auto;
-            max-width: 750px;
+            max-width: 600px;
+            justify-content: center;
+            justify-self: center;
+            justify-items: center;
         }
 
         .content h2 {
@@ -43,6 +46,9 @@ const char network_html[] PROGMEM = R"rawliteral(
 
         .content table {
             text-align: center;
+            display: flex;
+            justify-content: center;
+            border-spacing: 0.5rem;
         }
     </style>
 </head>
@@ -71,9 +77,6 @@ const char network_html[] PROGMEM = R"rawliteral(
             <table>
                 <tr>
                     <td>
-                        <h4>Hostname</h4>
-                    </td>
-                    <td>
                         <input type="text" maxlength=32 name="hostname" id="hostname" value="%HOSTNAME_VALUE%">
                     </td>
                     <td>
@@ -90,13 +93,12 @@ const char network_html[] PROGMEM = R"rawliteral(
         <form action="/update_network_config_local">
             <table>
                 <tr>
-                    <th>Network</th>
                     <th>SSID</th>
                     <th>Password</th>
                 </tr>
                 %NETWORK_CONFIG_PLACEHOLDER%
                 <tr>
-                    <td colspan="3">
+                    <td colspan="2">
                         <input type="submit" value="Submit">
                     </td>
                 </tr>
@@ -145,6 +147,21 @@ const char network_html[] PROGMEM = R"rawliteral(
                     <th>Port</th>
                 </tr>
                 %NETWORK_PORTS_PLACEHOLDER%
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Submit">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <h3>Multicast addresses</h3>
+        <form action="/update_network_config_local">
+            <table>
+                <tr>
+                    <th>Send IP</th>
+                    <th>Receive IP</th>
+                </tr>
+                %MULTICAST_ADDRESS_PLACEHOLDER%
                 <tr>
                     <td colspan="2">
                         <input type="submit" value="Submit">
@@ -248,8 +265,8 @@ const char network_html[] PROGMEM = R"rawliteral(
                 }
                 eventsSeenBefore = true;
             }, false);
-            source.addEventListener("networks", function (e) { 
-                var networks =  e.data;
+            source.addEventListener("networks", function (e) {
+                var networks = e.data;
             })
         }
 

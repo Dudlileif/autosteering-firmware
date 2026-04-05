@@ -27,24 +27,28 @@
 #define DEFAULT_AP_SSID "Base Station AP"
 #define DEFAULT_AP_PASSWORD "base-station"
 #define DEFAULT_RTK_BASE_STATION_ADDRESS "pirtkbase.local"
+#define DEFAULT_MULTICAST_RECEIVE_IP ""
 #endif
 
 #ifdef AUTOSTEERING_BRIDGE
 #define DEFAULT_HOSTNAME "autosteering-hardware"
 #define DEFAULT_AP_SSID "Tractor Autosteering AP"
 #define DEFAULT_AP_PASSWORD "tractor-autosteering"
+#define DEFAULT_MULTICAST_RECEIVE_IP "239.0.0.20"
 #endif
 
 #ifdef AUTOSTEERING_REMOTE_CONTROL
 #define DEFAULT_HOSTNAME "autosteering-remote-control"
 #define DEFAULT_AP_SSID "Tractor Remote Control AP"
 #define DEFAULT_AP_PASSWORD "tractor-remote-control"
+#define DEFAULT_MULTICAST_RECEIVE_IP "239.0.0.30"
 #endif
 
 #ifdef STEPPER_MOTOR_TESTING
 #define DEFAULT_HOSTNAME "stepper-motor-testing"
 #define DEFAULT_AP_SSID "Stepper Motor Testing AP"
 #define DEFAULT_AP_PASSWORD "stepper-motor-testing"
+#define DEFAULT_MULTICAST_RECEIVE_IP "239.0.0.20"
 #endif
 
 #define WIFI_CONFIG_FILE "/wifi_config"
@@ -54,6 +58,8 @@
 #define DEFAULT_TCP_SEND_PORT 9999
 #define DEFAULT_UDP_RECEIVE_PORT 6666U
 #define DEFAULT_UDP_SEND_PORT 3333U
+
+#define DEFAULT_MULTICAST_SEND_IP "239.0.0.10"
 
 class WiFiConfig
 {
@@ -71,6 +77,8 @@ public:
     uint16_t udpSendPort;
     bool startInAPMode;
     char rtkBaseStationAddress[32];
+    char multicastSendIp[32];
+    char multicastReceiveIp[32];
 
     WiFiConfig()
     {
@@ -83,6 +91,8 @@ public:
         udpReceivePort = DEFAULT_UDP_RECEIVE_PORT;
         udpSendPort = DEFAULT_UDP_SEND_PORT;
         startInAPMode = false;
+        strlcpy(multicastSendIp, DEFAULT_MULTICAST_SEND_IP, 32);
+        strlcpy(multicastReceiveIp, DEFAULT_MULTICAST_RECEIVE_IP, 32);
 #ifdef BASE_STATION_RELAY
         strlcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS, 32);
 #endif

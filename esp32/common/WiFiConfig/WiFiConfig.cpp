@@ -146,6 +146,18 @@ bool WiFiConfig::load(FS *fs)
             Serial.printf("Start in AP mode: %s\n", startInAPMode ? "true" : "false");
         }
 
+        if (savedWifiConfig["multicast_send_ip"].is<const char *>())
+        {
+            strlcpy(multicastSendIp, savedWifiConfig["multicast_send_ip"], 32);
+            Serial.printf("Saved multicast send IP: %s\n", multicastSendIp);
+        }
+
+        if (savedWifiConfig["multicast_receive_ip"].is<const char *>())
+        {
+            strlcpy(multicastReceiveIp, savedWifiConfig["multicast_receive_ip"], 32);
+            Serial.printf("Saved multicast send IP: %s\n", multicastReceiveIp);
+        }
+
 #ifdef BASE_STATION_RELAY
         if (savedWifiConfig["rtk_base_station_address"].is<const char *>())
         {
@@ -187,6 +199,8 @@ JsonDocument WiFiConfig::json()
     jsonDocument["udp_receive_port"] = udpReceivePort;
     jsonDocument["udp_send_port"] = udpSendPort;
     jsonDocument["start_in_ap_mode"] = startInAPMode;
+    jsonDocument["multicast_send_ip"] = multicastSendIp;
+    jsonDocument["multicast_receive_ip"] = multicastReceiveIp;
 #ifdef BASE_STATION_RELAY
     jsonDocument["rtk_base_station_address"] = rtkBaseStationAddress;
 #endif
