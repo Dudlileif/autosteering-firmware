@@ -13,7 +13,8 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+// along with Autosteering Firmware.  If not, see
+// <https://www.gnu.org/licenses/>.
 
 #ifndef TEENSYCOMMS_H
 #define TEENSYCOMMS_H
@@ -35,21 +36,20 @@ extern unsigned long teensyUptimeMs;
 
 extern elapsedMillis lastTeensyCommElapsedTime;
 
-struct TeensyHardwareState
-{
-    uint16_t wasReading;
-    uint16_t wasTarget;
-    bool motorEnabled;
-    bool motorStalled;
-    float rpm;
-    uint16_t stallguardResult;
-    uint8_t currentScale;
-    float yaw;
-    float pitch;
-    float roll;
-    float accX;
-    float accY;
-    float accZ;
+struct TeensyHardwareState {
+  uint16_t wasReading;
+  uint16_t wasTarget;
+  bool motorEnabled;
+  bool motorStalled;
+  float rpm;
+  uint16_t stallguardResult;
+  uint8_t currentScale;
+  float yaw;
+  float pitch;
+  float roll;
+  float accX;
+  float accY;
+  float accZ;
 };
 
 extern String gnssNmeaGns;

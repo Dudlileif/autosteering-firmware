@@ -55,8 +55,13 @@
 			"complex": "cpp",
 			"forward_list": "cpp",
 			"list": "cpp",
-			"valarray": "cpp"
+			"valarray": "cpp",
+			"cstdint": "cpp"
 		},
+		"[cpp]": {
+			"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+		},
+		"C_Cpp.intelliSenseEngine": "disabled",
 		"licenser.author": "Gaute Hagen",
 		"licenser.license": "GPLv3",
 		"licenser.projectName": "Autosteering Firmware"

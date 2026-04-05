@@ -13,7 +13,8 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+// along with Autosteering Firmware.  If not, see
+// <https://www.gnu.org/licenses/>.
 
 #ifndef WIFICONFIG_H
 #define WIFICONFIG_H
@@ -61,50 +62,48 @@
 
 #define DEFAULT_MULTICAST_SEND_IP "239.0.0.10"
 
-class WiFiConfig
-{
+class WiFiConfig {
 private:
 public:
-    char hostname[32];
-    char apSSID[32];
-    char apPassword[32];
-    char ssid[5][32];
-    char password[5][63];
-    uint16_t apServerPort;
-    uint16_t tcpReceivePort;
-    uint16_t tcpSendPort;
-    uint16_t udpReceivePort;
-    uint16_t udpSendPort;
-    bool startInAPMode;
-    char rtkBaseStationAddress[32];
-    char multicastSendIp[32];
-    char multicastReceiveIp[32];
+  char hostname[32];
+  char apSSID[32];
+  char apPassword[32];
+  char ssid[5][32];
+  char password[5][63];
+  uint16_t apServerPort;
+  uint16_t tcpReceivePort;
+  uint16_t tcpSendPort;
+  uint16_t udpReceivePort;
+  uint16_t udpSendPort;
+  bool startInAPMode;
+  char rtkBaseStationAddress[32];
+  char multicastSendIp[32];
+  char multicastReceiveIp[32];
 
-    WiFiConfig()
-    {
-        strlcpy(hostname, DEFAULT_HOSTNAME, 32);
-        strlcpy(apSSID, DEFAULT_AP_SSID, 32);
-        strlcpy(apPassword, DEFAULT_AP_PASSWORD, 32);
-        apServerPort = DEFAULT_AP_SERVER_PORT;
-        tcpReceivePort = DEFAULT_TCP_RECEIVE_PORT;
-        tcpSendPort = DEFAULT_TCP_SEND_PORT;
-        udpReceivePort = DEFAULT_UDP_RECEIVE_PORT;
-        udpSendPort = DEFAULT_UDP_SEND_PORT;
-        startInAPMode = false;
-        strlcpy(multicastSendIp, DEFAULT_MULTICAST_SEND_IP, 32);
-        strlcpy(multicastReceiveIp, DEFAULT_MULTICAST_RECEIVE_IP, 32);
+  WiFiConfig() {
+    strlcpy(hostname, DEFAULT_HOSTNAME, 32);
+    strlcpy(apSSID, DEFAULT_AP_SSID, 32);
+    strlcpy(apPassword, DEFAULT_AP_PASSWORD, 32);
+    apServerPort = DEFAULT_AP_SERVER_PORT;
+    tcpReceivePort = DEFAULT_TCP_RECEIVE_PORT;
+    tcpSendPort = DEFAULT_TCP_SEND_PORT;
+    udpReceivePort = DEFAULT_UDP_RECEIVE_PORT;
+    udpSendPort = DEFAULT_UDP_SEND_PORT;
+    startInAPMode = false;
+    strlcpy(multicastSendIp, DEFAULT_MULTICAST_SEND_IP, 32);
+    strlcpy(multicastReceiveIp, DEFAULT_MULTICAST_RECEIVE_IP, 32);
 #ifdef BASE_STATION_RELAY
-        strlcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS, 32);
+    strlcpy(rtkBaseStationAddress, DEFAULT_RTK_BASE_STATION_ADDRESS, 32);
 #endif
-    };
-    ~WiFiConfig() {};
+  };
+  ~WiFiConfig() {};
 
-    JsonDocument json();
-    bool load(FS *fs);
-    bool save(FS *fs);
-    void printToStream(Stream *stream);
-    void printToStreamPretty(Stream *stream);
-    bool hasKnownNetworks();
+  JsonDocument json();
+  bool load(FS *fs);
+  bool save(FS *fs);
+  void printToStream(Stream *stream);
+  void printToStreamPretty(Stream *stream);
+  bool hasKnownNetworks();
 };
 
 #endif

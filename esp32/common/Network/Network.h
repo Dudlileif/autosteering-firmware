@@ -13,31 +13,30 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Autosteering Firmware.  If not, see <https://www.gnu.org/licenses/>.
+// along with Autosteering Firmware.  If not, see
+// <https://www.gnu.org/licenses/>.
 
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <WiFi.h>
-#include <WiFiMulti.h>
-#include <WiFiAP.h>
-#include <WiFiUdp.h>
-#include <AsyncTCP.h>
-#include <WiFiConfig.h>
-#include <ESPmDNS.h>
 #include <../Config/Config.h>
+#include <AsyncTCP.h>
+#include <AsyncUDP.h>
+#include <ESPmDNS.h>
+#include <WiFi.h>
+#include <WiFiAP.h>
+#include <WiFiConfig.h>
+#include <WiFiMulti.h>
 
 extern WiFiConfig wifiConfig;
 
-extern WiFiUDP sendUDP;
-extern WiFiUDP receiveUDP;
+extern AsyncUDP udp;
 
 extern WiFiMulti wifiMulti;
 
-struct Destination
-{
-    IPAddress ip;
-    long heartbeat;
+struct Destination {
+  IPAddress ip;
+  long heartbeat;
 };
 
 extern Destination destinations[4];
@@ -49,6 +48,7 @@ void setWiFiLED(color_t color);
 void startWiFiAP();
 void startWiFiClient();
 void setupTCP();
+void setupUDP(AuPacketHandlerFunction onPacketCallback);
 void checkWiFiStatus();
 String wifiClientStatusToString(wl_status_t status);
 String wifiAuthTypeToString(wifi_auth_mode_t authType);
@@ -63,7 +63,6 @@ void sendUdpPacket(uint8_t *, int, char *, uint);
 void sendUdpPacket(const char *, int, IPAddress, uint);
 void sendUdpData(uint8_t *, int);
 void sendUdpData(const char *, int);
-int receiveUdpPacket(char *);
 
 void checkSendLED();
 #endif
